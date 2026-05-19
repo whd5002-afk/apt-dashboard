@@ -1,0 +1,1897 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>아파트 실거래가 대시보드</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', -apple-system, sans-serif; background: #ffffff; color: #080808; min-height: 100vh; }
+
+    /* ── Header ── */
+    .site-header { border-bottom: 1px solid #d8d8d8; padding: 0 40px; height: 60px; display: flex; align-items: center; justify-content: space-between; }
+    .logo { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+    .logo span { color: #6d3aff; }
+
+    /* ── Tab Navigation ── */
+    .tab-nav-wrap { border-bottom: 2px solid #e8e8e8; background: #fff; position: sticky; top: 0; z-index: 100; }
+    .tab-nav { max-width: 1200px; margin: 0 auto; padding: 0 40px; display: flex; }
+    .tab-btn { padding: 14px 24px; font-size: 14px; font-weight: 600; color: #888; cursor: pointer; border: none; background: none; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: color .15s, border-color .15s; letter-spacing: -0.2px; }
+    .tab-btn.active { color: #6d3aff; border-bottom-color: #6d3aff; }
+    .tab-btn:hover:not(.active) { color: #444; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Hero ── */
+    .hero { padding: 64px 40px 48px; max-width: 1200px; margin: 0 auto; }
+    .hero-label { display: inline-block; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #6d3aff; background: #f0ebff; padding: 4px 10px; border-radius: 4px; margin-bottom: 20px; }
+    .hero h1 { font-size: 42px; font-weight: 800; letter-spacing: -1.2px; line-height: 1.15; color: #080808; margin-bottom: 12px; }
+    .hero p { font-size: 15px; color: #666; line-height: 1.6; }
+    .period-badge { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; font-size: 13px; color: #444; background: #f5f5f5; border: 1px solid #d8d8d8; padding: 6px 14px; border-radius: 4px; font-weight: 500; }
+    .period-badge::before { content: "📅"; font-size: 12px; }
+
+    /* ── KPI Bar ── */
+    .kpi-bar { max-width: 1200px; margin: 0 auto 48px; padding: 0 40px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #d8d8d8; border: 1px solid #d8d8d8; border-radius: 8px; overflow: hidden; }
+    .kpi-item { background: #fff; padding: 24px 28px; }
+    .kpi-label { font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+    .kpi-value { font-size: 28px; font-weight: 800; letter-spacing: -0.8px; color: #080808; }
+    .kpi-sub { font-size: 13px; color: #888; margin-top: 4px; }
+
+    /* ── Section ── */
+    .section { max-width: 1200px; margin: 0 auto; padding: 0 40px 64px; }
+    .section-title { font-size: 20px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 8px; color: #080808; }
+    .section-desc { font-size: 13px; color: #888; margin-bottom: 24px; }
+
+    /* ── City Cards ── */
+    .city-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .city-card { border: 1px solid #d8d8d8; border-radius: 8px; overflow: hidden; transition: box-shadow 0.15s, transform 0.15s; cursor: default; }
+    .city-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); transform: translateY(-2px); }
+    .card-accent { height: 4px; }
+    .accent-purple { background: #6d3aff; } .accent-pink { background: #f53b7a; } .accent-blue { background: #1a6bff; }
+    .accent-orange { background: #ff7a1a; } .accent-green { background: #00b37e; } .accent-teal { background: #0aabb8; }
+    .card-body { padding: 24px; }
+    .card-rank { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; margin-bottom: 14px; }
+    .rank-purple { background: #f0ebff; color: #6d3aff; } .rank-pink { background: #fff0f5; color: #f53b7a; } .rank-blue { background: #ebf2ff; color: #1a6bff; }
+    .rank-orange { background: #fff4eb; color: #ff7a1a; } .rank-green { background: #e6fff6; color: #00b37e; } .rank-teal { background: #e6fbfc; color: #0aabb8; }
+    .city-name { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+    .city-count { font-size: 13px; color: #888; margin-bottom: 20px; }
+    .price-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; }
+    .price-label { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+    .price-value { font-size: 26px; font-weight: 800; letter-spacing: -0.8px; color: #080808; }
+    .price-value-sm { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; color: #444; }
+    .divider { height: 1px; background: #d8d8d8; margin: 16px 0; }
+    .stats-row { display: flex; gap: 16px; }
+    .stat-item { flex: 1; }
+    .stat-label { font-size: 11px; color: #aaa; font-weight: 500; margin-bottom: 3px; }
+    .stat-val { font-size: 13px; font-weight: 600; color: #444; }
+
+    /* ── Avg Price Bar Chart ── */
+    .bar-chart { display: flex; flex-direction: column; gap: 12px; }
+    .bar-row { display: flex; align-items: center; gap: 12px; }
+    .bar-city { width: 40px; font-size: 13px; font-weight: 600; color: #080808; flex-shrink: 0; }
+    .bar-wrap { flex: 1; height: 32px; background: #f5f5f5; border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 12px; font-size: 12px; font-weight: 700; color: #fff; transition: width 0.6s cubic-bezier(.23,1,.32,1); min-width: 60px; }
+    .bar-amt { width: 120px; text-align: right; font-size: 13px; font-weight: 700; color: #080808; flex-shrink: 0; }
+
+    /* ── Infrastructure Scores ── */
+    .infra-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .infra-card { border: 1px solid #d8d8d8; border-radius: 8px; overflow: hidden; transition: box-shadow 0.15s, transform 0.15s; }
+    .infra-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); transform: translateY(-2px); }
+    .infra-header { padding: 20px 20px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f0f0f0; }
+    .infra-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .infra-city-nm { font-size: 17px; font-weight: 800; letter-spacing: -0.4px; }
+    .infra-avg-badge { margin-left: auto; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
+    .infra-body { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 11px; }
+    .infra-row { }
+    .infra-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .infra-item-label { font-size: 12px; font-weight: 500; color: #555; display: flex; align-items: center; gap: 5px; }
+    .infra-item-score { font-size: 12px; font-weight: 800; color: #080808; }
+    .infra-track { height: 7px; background: #f0f0f0; border-radius: 4px; overflow: hidden; }
+    .infra-fill { height: 100%; border-radius: 4px; transition: width 0.9s cubic-bezier(.23,1,.32,1); }
+
+    /* ── Market Analysis ── */
+    .market-table { border: 1px solid #d8d8d8; border-radius: 8px; overflow: hidden; }
+    .market-thead { display: grid; grid-template-columns: 72px 1fr 1fr 100px 1fr 140px; background: #f8f8f8; border-bottom: 1px solid #d8d8d8; }
+    .market-tbody .market-row:not(:last-child) { border-bottom: 1px solid #f0f0f0; }
+    .market-row { display: grid; grid-template-columns: 72px 1fr 1fr 100px 1fr 140px; transition: background 0.1s; }
+    .market-row:hover { background: #fafafa; }
+    .market-th { padding: 12px 16px; font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.06em; }
+    .market-td { padding: 16px 16px; font-size: 13px; font-weight: 600; color: #080808; display: flex; align-items: center; }
+    .market-city { font-size: 15px; font-weight: 800; }
+    .drop-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
+    .drop-high { background: #fff0f0; color: #e53030; }
+    .drop-med  { background: #fff8eb; color: #d47a00; }
+    .drop-low  { background: #f0fff8; color: #00875a; }
+    .timing-dots { display: flex; gap: 3px; }
+    .timing-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .timing-dot.on  { background: #00b37e; }
+    .timing-dot.off { background: #e0e0e0; }
+    .timing-label { font-size: 12px; font-weight: 600; margin-left: 6px; }
+
+    /* ── Buy Score (dual) ── */
+    .buy-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .buy-card { border: 1px solid #d8d8d8; border-radius: 8px; overflow: hidden; transition: box-shadow 0.15s, transform 0.15s; }
+    .buy-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); transform: translateY(-2px); }
+    .buy-card-header { padding: 20px 24px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f0f0f0; }
+    .buy-city-nm { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+    .buy-rank-tag { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 9px; border-radius: 4px; }
+    .buy-dual { display: grid; grid-template-columns: 1fr 40px 1fr; border-bottom: 1px solid #f0f0f0; }
+    .score-panel { padding: 18px 20px 20px; }
+    .score-panel.right { border-left: 1px solid #f0f0f0; }
+    .score-era { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #aaa; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
+    .score-era-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .score-top { display: flex; align-items: flex-end; gap: 8px; margin-bottom: 12px; }
+    .score-num { font-size: 46px; font-weight: 900; letter-spacing: -2px; line-height: 1; }
+    .score-denom { font-size: 13px; font-weight: 600; color: #bbb; padding-bottom: 5px; }
+    .score-grade { font-size: 15px; font-weight: 900; padding: 4px 10px; border-radius: 4px; margin-bottom: 5px; letter-spacing: -.3px; }
+    .grade-Aplus { background: #d0fff0; color: #007a50; border: 1px solid #a0e8cc; }
+    .grade-A    { background: #e6fff6; color: #00875a; }
+    .grade-Bplus{ background: #ebf2ff; color: #1a6bff; }
+    .grade-B    { background: #f5f5f5; color: #666; }
+    .score-dims { display: flex; flex-direction: column; gap: 8px; }
+    .sdim-head { display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .sdim-label { font-size: 11px; font-weight: 500; color: #888; }
+    .sdim-val   { font-size: 11px; font-weight: 800; color: #080808; }
+    .sdim-track { height: 5px; background: #f0f0f0; border-radius: 3px; overflow: hidden; }
+    .sdim-fill  { height: 100%; border-radius: 3px; transition: width 1s cubic-bezier(.23,1,.32,1); }
+    .score-arrow { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+    .arrow-icon  { font-size: 18px; line-height: 1; }
+    .arrow-delta { font-size: 11px; font-weight: 800; }
+    .delta-up { color: #00875a; }
+    .delta-dn { color: #e53030; }
+    .delta-eq { color: #aaa; }
+    .buy-risk { padding: 14px 20px; display: flex; gap: 20px; flex-wrap: wrap; }
+    .risk-chip { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; }
+    .risk-dot  { width: 7px; height: 7px; border-radius: 50%; }
+    .risk-high { color: #e53030; } .risk-dot-high { background: #e53030; }
+    .risk-med  { color: #d47a00; } .risk-dot-med  { background: #d47a00; }
+    .risk-low  { color: #00875a; } .risk-dot-low  { background: #00875a; }
+    .buy-comment-row { padding: 12px 20px 18px; font-size: 12px; color: #888; line-height: 1.55; border-top: 1px solid #f8f8f8; }
+
+    /* ── Seoul Table ── */
+    .seoul-table-wrap { overflow-x: auto; border: 1px solid #d8d8d8; border-radius: 8px; }
+    .seoul-table { width: 100%; min-width: 1060px; border-collapse: collapse; }
+    .seoul-table thead tr { background: #f8f8f8; border-bottom: 1px solid #d8d8d8; }
+    .seoul-table th { padding: 11px 13px; font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.06em; text-align: left; white-space: nowrap; cursor: pointer; user-select: none; }
+    .seoul-table th:hover { color: #444; }
+    .seoul-table th.sort-asc::after  { content: " ↑"; color: #6d3aff; }
+    .seoul-table th.sort-desc::after { content: " ↓"; color: #6d3aff; }
+    .seoul-table tbody tr { border-bottom: 1px solid #f0f0f0; transition: background .1s; }
+    .seoul-table tbody tr:last-child { border-bottom: none; }
+    .seoul-table tbody tr:hover { background: #fafafa; }
+    .seoul-table td { padding: 13px 13px; font-size: 13px; font-weight: 600; color: #080808; }
+    .gu-cell { display: flex; align-items: center; gap: 8px; }
+    .gu-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .gu-nm   { font-size: 14px; font-weight: 800; white-space: nowrap; }
+    .score-pill { display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; padding: 3px 10px; border-radius: 4px; min-width: 42px; }
+    .score-pill.g-Aplus { background: #d0fff0; color: #007a50; border: 1px solid #a0e8cc; }
+    .score-pill.g-A     { background: #e6fff6; color: #00875a; }
+    .score-pill.g-Bplus { background: #ebf2ff; color: #1a6bff; }
+    .score-pill.g-B     { background: #f5f5f5; color: #666; }
+    .sc-delta { font-size: 11px; font-weight: 700; margin-left: 5px; }
+    .sc-up { color: #00875a; }
+    .sc-dn { color: #e53030; }
+    .infra-cell { display: flex; align-items: center; gap: 7px; }
+    .infra-bar  { width: 52px; height: 5px; background: #f0f0f0; border-radius: 3px; overflow: hidden; flex-shrink: 0; }
+    .infra-bar-fill { height: 100%; border-radius: 3px; }
+    .infra-num  { font-size: 12px; font-weight: 800; }
+    .redev-td   { font-size: 12px; color: #555; line-height: 1.4; white-space: normal; max-width: 170px; }
+    .gtx-pill   { display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 3px; white-space: nowrap; }
+    .gtx-a    { background: #fff0eb; color: #c84000; }
+    .gtx-b    { background: #ebf2ff; color: #1a6bff; }
+    .gtx-c    { background: #e6fff6; color: #00875a; }
+    .gtx-d    { background: #f0ebff; color: #6d3aff; }
+    .gtx-none { background: #f5f5f5; color: #aaa; }
+
+    /* ── Top District Cards (Seoul) ── */
+    .top3-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .top-card { border: 1px solid #d8d8d8; border-radius: 8px; overflow: hidden; transition: box-shadow .15s, transform .15s; }
+    .top-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,.08); transform: translateY(-2px); }
+    .top-card-accent { height: 4px; }
+    .top-card-body { padding: 22px 22px 18px; }
+    .top-card-rank { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; margin-bottom: 12px; }
+    .top-card-name { font-size: 22px; font-weight: 800; letter-spacing: -.5px; margin-bottom: 16px; }
+    .top-dual { display: flex; align-items: flex-end; gap: 16px; margin-bottom: 14px; }
+    .top-score-wrap { text-align: center; }
+    .top-score-label { font-size: 10px; font-weight: 700; color: #aaa; letter-spacing: .07em; text-transform: uppercase; margin-bottom: 4px; }
+    .top-score-num { font-size: 38px; font-weight: 900; letter-spacing: -1.5px; line-height: 1; }
+    .top-score-den { font-size: 12px; font-weight: 600; color: #bbb; }
+    .top-arrow-col { display: flex; flex-direction: column; align-items: center; gap: 3px; padding-bottom: 6px; }
+    .top-divider { height: 1px; background: #f0f0f0; margin: 12px 0; }
+    .top-facts { display: flex; flex-direction: column; gap: 5px; }
+    .top-fact-row { display: flex; justify-content: space-between; }
+    .top-fact-lbl { font-size: 11px; color: #aaa; font-weight: 500; }
+    .top-fact-val { font-size: 12px; font-weight: 700; color: #444; }
+    .top-comment { font-size: 12px; color: #888; line-height: 1.5; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0; }
+
+    /* ── Disclaimer ── */
+    .disclaimer { max-width: 1200px; margin: 0 auto 48px; padding: 0 40px; }
+    .disclaimer-box { background: #fffbeb; border: 1px solid #f0e060; border-radius: 8px; padding: 14px 18px; font-size: 12px; color: #7a6500; line-height: 1.6; }
+    .disclaimer-box strong { font-weight: 700; }
+
+    /* ── Footer ── */
+    footer { border-top: 1px solid #d8d8d8; padding: 24px 40px; font-size: 12px; color: #aaa; display: flex; justify-content: space-between; align-items: center; }
+    footer a { color: #6d3aff; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Refresh Button ── */
+    .refresh-btn { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: #080808; background: #fff; border: 1px solid #d8d8d8; border-radius: 4px; padding: 7px 14px; cursor: pointer; transition: background .15s, border-color .15s; }
+    .refresh-btn:hover { background: #f5f5f5; border-color: #bbb; }
+    .refresh-btn.running { color: #888; cursor: default; }
+    .refresh-dot { width: 7px; height: 7px; border-radius: 50%; background: #d8d8d8; flex-shrink: 0; }
+    .refresh-dot.live { background: #00b37e; box-shadow: 0 0 0 3px rgba(0,179,126,.2); }
+    .refresh-dot.running { background: #ff7a1a; animation: pulse .8s infinite; }
+    .refresh-dot.error { background: #f53b7a; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .data-badge { font-size: 12px; color: #888; margin-left: 4px; }
+
+    /* ── Loading overlay ── */
+    #loadingOverlay { display:none; position:fixed; inset:0; background:rgba(255,255,255,.85); z-index:999; align-items:center; justify-content:center; flex-direction:column; gap:16px; }
+    #loadingOverlay.show { display:flex; }
+    .loading-spinner { width:36px; height:36px; border:3px solid #d8d8d8; border-top-color:#6d3aff; border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .loading-msg { font-size:15px; font-weight:600; color:#444; }
+    .loading-sub  { font-size:13px; color:#aaa; }
+
+    /* ── 청약 Status Badges ── */
+    .status-badge { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 9px; border-radius:4px; white-space:nowrap; }
+    .status-upcoming { background:#ebf2ff; color:#1a6bff; }
+    .status-open     { background:#e6fff6; color:#00875a; }
+    .status-announce { background:#fff4eb; color:#ff7a1a; }
+    .status-contract { background:#f0ebff; color:#6d3aff; }
+    .status-done     { background:#f5f5f5; color:#aaa;    }
+
+    /* ── 청약 Cards ── */
+    .cheong-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+    .cheong-card { border:1px solid #d8d8d8; border-radius:8px; overflow:hidden; transition:box-shadow .15s,transform .15s; }
+    .cheong-card:hover { box-shadow:0 8px 24px rgba(0,0,0,.08); transform:translateY(-2px); }
+    .cheong-header { padding:18px 20px 14px; display:flex; align-items:flex-start; justify-content:space-between; border-bottom:1px solid #f0f0f0; gap:10px; }
+    .cheong-title { flex:1; }
+    .cheong-name { font-size:16px; font-weight:800; letter-spacing:-.4px; margin-bottom:3px; }
+    .cheong-loc  { font-size:12px; color:#888; }
+    .cheong-body { padding:16px 20px 14px; }
+    .price-compare-row { display:flex; align-items:center; gap:14px; margin-bottom:14px; flex-wrap:wrap; }
+    .pc-block { }
+    .pc-label { font-size:10px; font-weight:700; color:#aaa; text-transform:uppercase; letter-spacing:.07em; margin-bottom:3px; }
+    .pc-val   { font-size:20px; font-weight:800; letter-spacing:-.6px; }
+    .pc-sep   { color:#d8d8d8; font-size:20px; font-weight:300; padding-bottom:2px; }
+    .premium-badge { display:inline-flex; align-items:center; font-size:12px; font-weight:700; padding:3px 9px; border-radius:4px; margin-left:auto; }
+    .premium-pos { background:#e6fff6; color:#00875a; }
+    .premium-neg { background:#fff0f0; color:#e53030; }
+    .premium-eq  { background:#f5f5f5; color:#888; }
+    .cheong-meta { display:flex; gap:14px; flex-wrap:wrap; }
+    .cm-item     { display:flex; flex-direction:column; gap:2px; }
+    .cm-lbl      { font-size:10px; font-weight:700; color:#aaa; text-transform:uppercase; letter-spacing:.06em; }
+    .cm-val      { font-size:12px; font-weight:700; color:#444; }
+    /* timeline strip */
+    .cheong-timeline { padding:12px 20px 14px; border-top:1px solid #f5f5f5; display:flex; align-items:center; gap:0; }
+    .tl-step { display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
+    .tl-dot  { width:9px; height:9px; border-radius:50%; margin-bottom:5px; }
+    .tl-dot.done    { background:#00b37e; }
+    .tl-dot.active  { background:#6d3aff; box-shadow:0 0 0 3px rgba(109,58,255,.18); }
+    .tl-dot.pending { background:#e0e0e0; }
+    .tl-lbl  { font-size:10px; font-weight:600; color:#888; white-space:nowrap; }
+    .tl-date { font-size:10px; color:#bbb; white-space:nowrap; }
+    .tl-line { flex:1; height:1px; background:#e8e8e8; margin-bottom:14px; }
+
+    /* ── Price Compare Bar Chart ── */
+    .pb-section { display:flex; flex-direction:column; gap:18px; }
+    .pb-row  { display:flex; align-items:center; gap:14px; }
+    .pb-name { width:130px; flex-shrink:0; }
+    .pb-name-main { font-size:13px; font-weight:700; color:#080808; }
+    .pb-name-sub  { font-size:11px; color:#aaa; }
+    .pb-bars { flex:1; display:flex; flex-direction:column; gap:4px; }
+    .pb-bar-row { display:flex; align-items:center; gap:8px; }
+    .pb-bar-lbl  { font-size:10px; font-weight:700; color:#aaa; width:26px; flex-shrink:0; }
+    .pb-bar-track { flex:1; height:11px; background:#f5f5f5; border-radius:3px; overflow:hidden; }
+    .pb-bar-fill  { height:100%; border-radius:3px; transition:width .8s cubic-bezier(.23,1,.32,1); }
+    .pb-bar-amt   { font-size:12px; font-weight:700; color:#080808; width:68px; text-align:right; flex-shrink:0; }
+    .pb-premium-col { width:64px; flex-shrink:0; text-align:center; }
+
+    /* ── API Panel ── */
+    .api-panel { border:1px solid #d8d8d8; border-radius:8px; padding:18px 22px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; background:#fafafa; }
+    .api-panel-left { flex:1; min-width:180px; }
+    .api-panel-title { font-size:14px; font-weight:700; color:#080808; margin-bottom:4px; }
+    .api-panel-desc  { font-size:12px; color:#888; line-height:1.5; }
+    .api-input-wrap  { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .api-input { border:1px solid #d8d8d8; border-radius:4px; padding:8px 12px; font-size:12px; width:260px; font-family:monospace; background:#fff; }
+    .api-input:focus { outline:none; border-color:#6d3aff; box-shadow:0 0 0 3px rgba(109,58,255,.1); }
+    .api-fetch-btn { font-size:13px; font-weight:600; color:#fff; background:#6d3aff; border:none; border-radius:4px; padding:8px 16px; cursor:pointer; flex-shrink:0; transition:background .15s; }
+    .api-fetch-btn:hover { background:#5a2de8; }
+    .api-status-msg { font-size:12px; color:#888; display:flex; align-items:center; gap:6px; }
+    .api-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .api-dot.live { background:#00b37e; }
+    .api-dot.err  { background:#e53030; }
+    .api-dot.idle { background:#d8d8d8; }
+  </style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-msg" id="loadingMsg">데이터 수집 중…</div>
+  <div class="loading-sub">국토부 실거래가 다운로드 중입니다. 약 1~2분 소요됩니다.</div>
+</div>
+
+<header class="site-header">
+  <div class="logo">Real<span>Price</span> Dashboard</div>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <span class="data-badge" id="dataBadge"></span>
+    <button class="refresh-btn" id="refreshBtn" onclick="triggerRefresh()">
+      <div class="refresh-dot" id="refreshDot"></div>
+      <span id="refreshLabel">데이터 새로고침</span>
+    </button>
+  </div>
+</header>
+
+<!-- Tab Navigation -->
+<div class="tab-nav-wrap">
+  <div class="tab-nav">
+    <button class="tab-btn active" id="tabBtn1" onclick="switchTab(1)">지방 6개 도시</button>
+    <button class="tab-btn"        id="tabBtn2" onclick="switchTab(2)">서울 25개 구별 분석</button>
+    <button class="tab-btn"        id="tabBtn3" onclick="switchTab(3)">청약 정보</button>
+  </div>
+</div>
+
+<!-- ══════════════ TAB 1: 지방 6개 도시 ══════════════ -->
+<div id="tabPanel1" class="tab-panel active">
+
+<section class="hero">
+  <div class="hero-label">아파트 매매 실거래가</div>
+  <h1>6개 도시<br>아파트 종합 분석</h1>
+  <p>국토교통부 실거래가 공개시스템 직접 다운로드 데이터 기반<br>
+     실거래가 · 인프라 스코어 · 시장 전망 · 종합 매수 판단을 제공합니다.</p>
+  <div class="period-badge">기준 기간: 2025년 10월 ~ 2026년 3월 (계약일 기준, 해제 거래 제외)</div>
+</section>
+
+<div class="kpi-bar">
+  <div class="kpi-item">
+    <div class="kpi-label">유효 거래건수</div>
+    <div class="kpi-value" id="kpiTotal">—</div>
+    <div class="kpi-sub">해제 거래 3,533건 제외</div>
+  </div>
+  <div class="kpi-item">
+    <div class="kpi-label">최고 평균가 도시</div>
+    <div class="kpi-value" id="kpiTop">—</div>
+    <div class="kpi-sub" id="kpiTopSub">—</div>
+  </div>
+  <div class="kpi-item">
+    <div class="kpi-label">최고/최저 격차</div>
+    <div class="kpi-value" id="kpiRatio">—</div>
+    <div class="kpi-sub" id="kpiRatioSub">—</div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="section-title">도시별 실거래가 현황</div>
+  <div class="section-desc">해제 거래를 제외한 유효 계약 기준 집계</div>
+  <div class="city-grid" id="cityGrid"></div>
+</section>
+
+<section class="section">
+  <div class="section-title">평균 매매가 비교</div>
+  <div class="section-desc">6개 도시 아파트 평균 매매가 (만원)</div>
+  <div class="bar-chart" id="barChart"></div>
+</section>
+
+<section class="section">
+  <div class="section-title">도시별 인프라 스코어</div>
+  <div class="section-desc">병원·마트·교통·치안·공원 5개 항목 100점 만점 추산 (모델 추산값)</div>
+  <div class="infra-grid" id="infraGrid"></div>
+</section>
+
+<section class="section">
+  <div class="section-title">시장 분석 · 전망</div>
+  <div class="section-desc">전고점 대비 하락률 · 2028년 예상 매수가 · 매수 적기 시점 (모델 추산값)</div>
+  <div class="market-table">
+    <div class="market-thead">
+      <div class="market-th">도시</div>
+      <div class="market-th">전고점 (추산)</div>
+      <div class="market-th">현재 평균가</div>
+      <div class="market-th">하락률</div>
+      <div class="market-th">2028 예상가</div>
+      <div class="market-th">매수 적기</div>
+    </div>
+    <div class="market-tbody" id="marketBody"></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-title">종합 매수 판단 점수</div>
+  <div class="section-desc">가격 매력도(40점) + 인프라(25점) + 타이밍(35점) = 100점 만점 · 예상 2028 점수는 실제 공공데이터 기반 재계산 — 입주예정물량(한국부동산원), 미분양 현황(국토부 통계누리), 인구이동(통계청) 반영</div>
+  <div class="buy-grid" id="buyGrid"></div>
+</section>
+
+</div><!-- /tabPanel1 -->
+
+<!-- ══════════════ TAB 2: 서울 25개 구별 ══════════════ -->
+<div id="tabPanel2" class="tab-panel">
+
+<section class="hero">
+  <div class="hero-label">서울 아파트 매매 실거래가</div>
+  <h1>서울 25개 구<br>종합 분석</h1>
+  <p>국토교통부 실거래가 기반 구별 현황 · 재개발/재건축 호재 · GTX 교통 호재<br>
+     인프라 스코어 · 현재 2026 점수 · 2028년 예상 점수를 한눈에 비교합니다.</p>
+  <div class="period-badge">기준: 2025년 10월 ~ 2026년 3월 실거래가 · 전고점 및 점수는 모델 추산값</div>
+</section>
+
+<div class="kpi-bar">
+  <div class="kpi-item">
+    <div class="kpi-label">서울 평균가 (추산)</div>
+    <div class="kpi-value">약 11.2억</div>
+    <div class="kpi-sub">25개 구 단순 평균 기준</div>
+  </div>
+  <div class="kpi-item">
+    <div class="kpi-label">2028 최고 기대 구</div>
+    <div class="kpi-value">동대문·성동</div>
+    <div class="kpi-sub">GTX-B + 뉴타운 복합 효과</div>
+  </div>
+  <div class="kpi-item">
+    <div class="kpi-label">평균 전고점 하락률</div>
+    <div class="kpi-value">22.4%</div>
+    <div class="kpi-sub">25개 구 단순 평균</div>
+  </div>
+</div>
+
+<!-- Top 3 구 하이라이트 -->
+<section class="section">
+  <div class="section-title">2028 주목 구 TOP 3</div>
+  <div class="section-desc">2028년 예상 점수 기준 상위 3개 구 — GTX + 대규모 재개발 복합 수혜 지역</div>
+  <div class="top3-grid" id="seoulTop3"></div>
+</section>
+
+<!-- 전체 25개 구 테이블 -->
+<section class="section">
+  <div class="section-title">서울 25개 구 종합 현황</div>
+  <div class="section-desc">컬럼 헤더 클릭 시 정렬 · 점수는 가격매력도(40) + 인프라(25) + 타이밍(35) = 100점 만점 (모델 추산)</div>
+  <div class="seoul-table-wrap">
+    <table class="seoul-table" id="seoulTable">
+      <thead>
+        <tr>
+          <th data-col="rank"   data-type="num">#</th>
+          <th data-col="name"   data-type="str">구</th>
+          <th data-col="avg"    data-type="num">현재 평균가</th>
+          <th data-col="peak"   data-type="num">전고점 (추산)</th>
+          <th data-col="drop"   data-type="num">하락률</th>
+          <th data-col="redev"  data-type="str">재개발/재건축 호재</th>
+          <th data-col="gtx"    data-type="str">GTX 호재</th>
+          <th data-col="infra"  data-type="num">인프라</th>
+          <th data-col="s26"    data-type="num">2026 점수</th>
+          <th data-col="s28"    data-type="num">2028 예상</th>
+        </tr>
+      </thead>
+      <tbody id="seoulTbody"></tbody>
+    </table>
+  </div>
+</section>
+
+</div><!-- /tabPanel2 -->
+
+<!-- ══════════════ TAB 3: 청약 정보 ══════════════ -->
+<div id="tabPanel3" class="tab-panel">
+
+<section class="hero">
+  <div class="hero-label">청약 정보</div>
+  <h1>전국 청약<br>진행 현황</h1>
+  <p>지방 6개 도시 · 서울 25개 구 청약 일정 · 분양가 vs 시세 비교<br>
+     국토부 청약홈 Open API 연동 (API 키 입력 시 실시간 갱신)</p>
+  <div class="period-badge">기준: 2026년 5~6월 청약 공고 기준 · API 미설정 시 fallback 데이터 표시</div>
+</section>
+
+<div class="kpi-bar">
+  <div class="kpi-item">
+    <div class="kpi-label">청약 진행 단지</div>
+    <div class="kpi-value" id="cqKpiTotal">—</div>
+    <div class="kpi-sub" id="cqKpiTotalSub">—</div>
+  </div>
+  <div class="kpi-item">
+    <div class="kpi-label">접수중 / 접수예정</div>
+    <div class="kpi-value" id="cqKpiOpen">—</div>
+    <div class="kpi-sub" id="cqKpiOpenSub">—</div>
+  </div>
+  <div class="kpi-item">
+    <div class="kpi-label">평균 분양가/시세 비율</div>
+    <div class="kpi-value" id="cqKpiRatio">—</div>
+    <div class="kpi-sub">낮을수록 청약 매력도 높음</div>
+  </div>
+</div>
+
+<!-- Section 1: 청약 진행 현황 카드 -->
+<section class="section">
+  <div class="section-title">청약 진행 현황</div>
+  <div class="section-desc">단지별 상태 · 분양가 · 청약 일정 · 예상 경쟁률</div>
+
+  <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;" id="cqFilterRow">
+    <button class="cq-filter-btn active" data-filter="all"   onclick="filterCheongak('all')">전체</button>
+    <button class="cq-filter-btn"        data-filter="서울"   onclick="filterCheongak('서울')">서울</button>
+    <button class="cq-filter-btn"        data-filter="지방"   onclick="filterCheongak('지방')">지방</button>
+    <button class="cq-filter-btn"        data-filter="접수중"  onclick="filterCheongak('접수중')">접수중</button>
+    <button class="cq-filter-btn"        data-filter="접수예정" onclick="filterCheongak('접수예정')">접수예정</button>
+    <button class="cq-filter-btn"        data-filter="당첨발표" onclick="filterCheongak('당첨발표')">당첨발표</button>
+    <button class="cq-filter-btn"        data-filter="계약중"  onclick="filterCheongak('계약중')">계약중</button>
+  </div>
+
+  <div class="cheong-grid" id="cheongGrid"></div>
+</section>
+
+<!-- Section 2: 분양가 vs 시세 비교 -->
+<section class="section">
+  <div class="section-title">분양가 vs 주변 시세 비교</div>
+  <div class="section-desc">분양가(청색) vs 인근 시세(회색) · 오른쪽 숫자는 분양가/시세 비율 (낮을수록 유리)</div>
+  <div class="pb-section" id="priceCompareChart"></div>
+</section>
+
+<!-- Section 3: 청약 일정 타임라인 -->
+<section class="section">
+  <div class="section-title">청약 일정 타임라인</div>
+  <div class="section-desc">2026년 5~6월 주요 청약 일정 — 접수 시작일 기준 정렬</div>
+  <div class="market-table">
+    <div style="display:grid;grid-template-columns:1fr 100px 140px 140px 140px 100px;background:#f8f8f8;border-bottom:1px solid #d8d8d8;">
+      <div class="market-th">단지명 · 위치</div>
+      <div class="market-th">세대수</div>
+      <div class="market-th">접수일</div>
+      <div class="market-th">당첨발표</div>
+      <div class="market-th">계약일</div>
+      <div class="market-th">예상경쟁률</div>
+    </div>
+    <div id="cqScheduleBody"></div>
+  </div>
+</section>
+
+<!-- Section 4: API 연동 패널 -->
+<section class="section" style="padding-bottom:32px;">
+  <div class="section-title">청약홈 Open API 연동</div>
+  <div class="section-desc">공공데이터포털 서비스키 입력 시 실시간 청약 공고를 불러옵니다</div>
+  <div class="api-panel">
+    <div class="api-panel-left">
+      <div class="api-panel-title">청약홈 Open API (공공데이터포털)</div>
+      <div class="api-panel-desc">
+        data.go.kr에서 <strong>"APT청약 공공데이터"</strong> 서비스키 발급 후 입력.<br>
+        엔드포인트: <code style="font-size:11px;background:#f0f0f0;padding:1px 4px;border-radius:2px;">ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail</code>
+      </div>
+    </div>
+    <div class="api-input-wrap">
+      <input class="api-input" id="apiKeyInput" type="password" placeholder="서비스키 (URL Decode 값)" />
+      <button class="api-fetch-btn" onclick="fetchCheongakAPI()">API 조회</button>
+    </div>
+    <div class="api-status-msg" id="apiStatusMsg">
+      <div class="api-dot idle" id="apiDot"></div>
+      <span id="apiStatusText">API 키 미설정 — fallback 데이터 표시 중</span>
+    </div>
+  </div>
+</section>
+
+<!-- Section 5: 청약 자금 계산기 -->
+<section class="section" id="calcSection" style="padding-bottom:56px;">
+  <div class="section-title">청약 자금 계산기</div>
+  <div class="section-desc">분양가 입력 → 계약금·중도금·잔금 자동 분배 · 무주택자 LTV 기준 대출 한도 · 실필요 현금 산출</div>
+
+  <div class="calc-wrap">
+
+    <!-- 입력 패널 -->
+    <div class="calc-input-panel">
+      <div class="calc-section-label">기본 정보 입력</div>
+
+      <div class="calc-field">
+        <label class="calc-label">분양가 (만원)</label>
+        <div class="calc-input-row">
+          <input class="calc-input" id="calcPrice" type="number" placeholder="예: 85000" oninput="calcFunds()" />
+          <span class="calc-unit">만원</span>
+        </div>
+        <div class="calc-hint" id="calcPriceHint"></div>
+      </div>
+
+      <div class="calc-field">
+        <label class="calc-label">계약금 비율</label>
+        <div class="calc-radio-row" id="contractRatioRow">
+          <button class="calc-radio active" data-val="10" onclick="setContractRatio(10)">10%</button>
+          <button class="calc-radio"        data-val="15" onclick="setContractRatio(15)">15%</button>
+          <button class="calc-radio"        data-val="20" onclick="setContractRatio(20)">20%</button>
+        </div>
+      </div>
+
+      <div class="calc-field">
+        <label class="calc-label">무주택 여부</label>
+        <div class="calc-radio-row" id="houseOwnerRow">
+          <button class="calc-radio active" data-val="no"  onclick="setOwner('no')">무주택자</button>
+          <button class="calc-radio"        data-val="yes" onclick="setOwner('yes')">유주택자</button>
+        </div>
+      </div>
+
+      <div class="calc-field">
+        <label class="calc-label">지역 구분</label>
+        <div class="calc-radio-row" id="regionRow">
+          <button class="calc-radio active" data-val="규제" onclick="setRegion('규제')">투기·투기과열 (강남 등)</button>
+          <button class="calc-radio"        data-val="조정" onclick="setRegion('조정')">조정대상지역</button>
+          <button class="calc-radio"        data-val="일반" onclick="setRegion('일반')">일반지역</button>
+        </div>
+      </div>
+
+      <div class="calc-field">
+        <label class="calc-label">중도금 대출 (분양가 기준 %)</label>
+        <div class="calc-input-row">
+          <input class="calc-input" id="calcJungdo" type="number" value="60" min="0" max="70" oninput="calcFunds()" />
+          <span class="calc-unit">% (통상 40~60%)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 결과 패널 -->
+    <div class="calc-result-panel">
+      <div class="calc-section-label">자금 계획 결과</div>
+
+      <!-- 분양가 분배 게이지 -->
+      <div class="calc-gauge-wrap" id="calcGauge">
+        <div class="calc-gauge-bar">
+          <div class="calc-gauge-seg seg-contract" id="gaugeContract" style="width:10%;">계약금<br>10%</div>
+          <div class="calc-gauge-seg seg-jungdo"   id="gaugeJungdo"   style="width:60%;">중도금<br>60%</div>
+          <div class="calc-gauge-seg seg-balance"  id="gaugeBalance"  style="width:30%;">잔금<br>30%</div>
+        </div>
+      </div>
+
+      <!-- 3단 결과 카드 -->
+      <div class="calc-cards">
+        <div class="calc-card cc-contract">
+          <div class="cc-icon">1</div>
+          <div class="cc-label">계약금</div>
+          <div class="cc-val" id="resContract">—</div>
+          <div class="cc-sub" id="resContractPct">분양가의 —%</div>
+          <div class="cc-note">계약일에 납부 (현금)</div>
+        </div>
+        <div class="calc-card cc-jungdo">
+          <div class="cc-icon">2</div>
+          <div class="cc-label">중도금</div>
+          <div class="cc-val" id="resJungdo">—</div>
+          <div class="cc-sub" id="resJungdoPct">분양가의 —%</div>
+          <div class="cc-note">중도금 대출 가능</div>
+        </div>
+        <div class="calc-card cc-balance">
+          <div class="cc-icon">3</div>
+          <div class="cc-label">잔금</div>
+          <div class="cc-val" id="resBalance">—</div>
+          <div class="cc-sub" id="resBalancePct">분양가의 —%</div>
+          <div class="cc-note">입주 시 납부</div>
+        </div>
+      </div>
+
+      <!-- 대출 한도 테이블 -->
+      <div class="calc-loan-box" id="calcLoanBox">
+        <div class="calc-section-label" style="margin-bottom:12px;">LTV 기준 주택담보대출 한도</div>
+        <div class="calc-loan-grid">
+          <div class="clg-row clg-head">
+            <div>구분</div><div>LTV 한도</div><div>대출 한도액</div><div>잔금 자부담</div>
+          </div>
+          <div class="clg-row" id="loanRow1"></div>
+          <div class="clg-row" id="loanRow2"></div>
+        </div>
+        <div class="calc-loan-note" id="loanNote"></div>
+      </div>
+
+      <!-- 최종 실필요 현금 -->
+      <div class="calc-cash-summary" id="calcCashSummary">
+        <div class="calc-section-label" style="margin-bottom:14px;">실제 필요 현금 요약</div>
+        <div class="ccs-row">
+          <span class="ccs-label">계약금 (현금 필수)</span>
+          <span class="ccs-val" id="cashContract">—</span>
+        </div>
+        <div class="ccs-row">
+          <span class="ccs-label">중도금 자기부담 (대출 초과분)</span>
+          <span class="ccs-val" id="cashJungdoOwn">—</span>
+        </div>
+        <div class="ccs-row">
+          <span class="ccs-label">잔금 자기부담 (담보대출 제외)</span>
+          <span class="ccs-val" id="cashBalanceOwn">—</span>
+        </div>
+        <div class="ccs-divider"></div>
+        <div class="ccs-row ccs-total">
+          <span class="ccs-label">총 실필요 현금</span>
+          <span class="ccs-val" id="cashTotal" style="color:#6d3aff;">—</span>
+        </div>
+        <div class="ccs-row" style="margin-top:6px;">
+          <span class="ccs-label" style="color:#aaa;">중도금 대출 잔액</span>
+          <span class="ccs-val" style="color:#aaa;" id="cashJungdoLoan">—</span>
+        </div>
+        <div class="ccs-row">
+          <span class="ccs-label" style="color:#aaa;">입주 후 담보대출 잔액</span>
+          <span class="ccs-val" style="color:#aaa;" id="cashMortgage">—</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+</div><!-- /tabPanel3 -->
+
+<style>
+  .cq-filter-btn { padding:6px 14px; font-size:12px; font-weight:600; color:#888; background:#fff; border:1px solid #d8d8d8; border-radius:4px; cursor:pointer; transition:background .1s,color .1s,border-color .1s; }
+  .cq-filter-btn:hover { background:#f5f5f5; }
+  .cq-filter-btn.active { background:#6d3aff; color:#fff; border-color:#6d3aff; }
+
+  /* ── 자금 계산기 ── */
+  .calc-wrap { display:grid; grid-template-columns:380px 1fr; gap:20px; align-items:flex-start; }
+  .calc-input-panel { border:1px solid #d8d8d8; border-radius:8px; padding:24px; display:flex; flex-direction:column; gap:20px; }
+  .calc-result-panel { display:flex; flex-direction:column; gap:16px; }
+  .calc-section-label { font-size:12px; font-weight:700; color:#aaa; text-transform:uppercase; letter-spacing:.07em; }
+  .calc-field { display:flex; flex-direction:column; gap:7px; }
+  .calc-label { font-size:13px; font-weight:600; color:#444; }
+  .calc-input-row { display:flex; align-items:center; gap:8px; }
+  .calc-input { border:1px solid #d8d8d8; border-radius:4px; padding:9px 12px; font-size:14px; font-weight:600; width:160px; transition:border-color .15s; }
+  .calc-input:focus { outline:none; border-color:#6d3aff; box-shadow:0 0 0 3px rgba(109,58,255,.1); }
+  .calc-unit { font-size:12px; color:#888; font-weight:500; }
+  .calc-hint { font-size:12px; color:#6d3aff; font-weight:600; min-height:16px; }
+  .calc-radio-row { display:flex; gap:6px; flex-wrap:wrap; }
+  .calc-radio { padding:6px 12px; font-size:12px; font-weight:600; color:#666; background:#f5f5f5; border:1px solid #d8d8d8; border-radius:4px; cursor:pointer; transition:all .1s; }
+  .calc-radio:hover { background:#ece5ff; border-color:#b89eff; color:#6d3aff; }
+  .calc-radio.active { background:#6d3aff; color:#fff; border-color:#6d3aff; }
+
+  /* gauge */
+  .calc-gauge-wrap { border:1px solid #d8d8d8; border-radius:8px; padding:16px 20px; }
+  .calc-gauge-bar { display:flex; height:44px; border-radius:6px; overflow:hidden; }
+  .calc-gauge-seg { display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; line-height:1.3; transition:width .5s cubic-bezier(.23,1,.32,1); }
+  .seg-contract { background:#6d3aff; }
+  .seg-jungdo   { background:#1a6bff; }
+  .seg-balance  { background:#00b37e; }
+
+  /* result cards */
+  .calc-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .calc-card { border-radius:8px; padding:16px 14px; text-align:center; }
+  .cc-contract { background:#f0ebff; }
+  .cc-jungdo   { background:#ebf2ff; }
+  .cc-balance  { background:#e6fff6; }
+  .cc-icon { width:22px; height:22px; border-radius:50%; font-size:11px; font-weight:800; color:#fff; display:flex; align-items:center; justify-content:center; margin:0 auto 8px; }
+  .cc-contract .cc-icon { background:#6d3aff; }
+  .cc-jungdo   .cc-icon { background:#1a6bff; }
+  .cc-balance  .cc-icon { background:#00b37e; }
+  .cc-label { font-size:11px; font-weight:700; color:#888; margin-bottom:6px; }
+  .cc-val   { font-size:18px; font-weight:800; letter-spacing:-.5px; margin-bottom:3px; }
+  .cc-contract .cc-val { color:#6d3aff; }
+  .cc-jungdo   .cc-val { color:#1a6bff; }
+  .cc-balance  .cc-val { color:#00b37e; }
+  .cc-sub  { font-size:11px; color:#888; margin-bottom:4px; }
+  .cc-note { font-size:10px; color:#aaa; }
+
+  /* loan table */
+  .calc-loan-box { border:1px solid #d8d8d8; border-radius:8px; padding:18px 20px; }
+  .calc-loan-grid { display:flex; flex-direction:column; gap:0; border:1px solid #e8e8e8; border-radius:6px; overflow:hidden; }
+  .clg-row { display:grid; grid-template-columns:1fr 80px 1fr 1fr; }
+  .clg-row > div { padding:10px 12px; font-size:12px; font-weight:600; border-bottom:1px solid #f0f0f0; }
+  .clg-row:last-child > div { border-bottom:none; }
+  .clg-head { background:#f8f8f8; }
+  .clg-head > div { font-size:11px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:.05em; }
+  .calc-loan-note { font-size:11px; color:#888; margin-top:10px; line-height:1.6; }
+
+  /* cash summary */
+  .calc-cash-summary { border:1px solid #d8d8d8; border-radius:8px; padding:18px 20px; }
+  .ccs-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; }
+  .ccs-label { font-size:13px; font-weight:500; color:#555; }
+  .ccs-val   { font-size:14px; font-weight:800; color:#080808; }
+  .ccs-divider { height:1px; background:#d8d8d8; margin:8px 0; }
+  .ccs-total .ccs-label { font-size:14px; font-weight:700; color:#080808; }
+  .ccs-total .ccs-val   { font-size:20px; }
+
+  /* ── 지하철 배지 ── */
+  .cheong-subway { display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:8px 20px 0; }
+  .cheong-subway-lbl { font-size:10px; font-weight:700; color:#aaa; text-transform:uppercase; letter-spacing:.06em; flex-shrink:0; }
+  .subway-badge { display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700; color:#fff; white-space:nowrap; }
+
+  /* ── 계산기 연동 스트립 ── */
+  .cheong-calc-link { display:flex; align-items:center; justify-content:space-between; padding:10px 20px; background:#f8f5ff; border-top:1px solid #ece4ff; cursor:pointer; transition:background .15s; font-size:12px; font-weight:700; color:#6d3aff; margin-top:8px; }
+  .cheong-calc-link:hover { background:#ede5ff; }
+  .cheong-calc-arrow { font-size:14px; }
+  .cheong-calc-info { display:flex; align-items:center; gap:8px; }
+  .cheong-calc-price { font-size:11px; font-weight:600; color:#888; }
+
+  /* 연동 후 계산기 하이라이트 */
+  @keyframes calcHighlight { 0%{box-shadow:0 0 0 0 rgba(109,58,255,.4)} 70%{box-shadow:0 0 0 10px rgba(109,58,255,0)} 100%{box-shadow:none} }
+  .calc-linked { animation:calcHighlight .8s ease-out; }
+</style> { padding:6px 14px; font-size:12px; font-weight:600; color:#888; background:#fff; border:1px solid #d8d8d8; border-radius:4px; cursor:pointer; transition:background .1s,color .1s,border-color .1s; }
+  .cq-filter-btn:hover { background:#f5f5f5; }
+  .cq-filter-btn.active { background:#6d3aff; color:#fff; border-color:#6d3aff; }
+</style>
+
+<div class="disclaimer">
+  <div class="disclaimer-box">
+    <strong>안내:</strong> 실거래가는 국토교통부 공개 데이터(해제 거래 제외)이며 법적 효력이 없습니다.
+    서울 구별 평균가·전고점은 국토부 실거래가 공개시스템 추산값이며, 인프라 스코어·전고점·GTX 개통 시기·점수는 참고용 모델 추산값으로 투자 결정의 근거로 사용하지 마십시오.
+  </div>
+</div>
+
+<footer>
+  <span>실거래가 출처: <a href="https://rt.molit.go.kr" target="_blank">rt.molit.go.kr</a> · 국토교통부 실거래가 공개시스템 · 계약일 기준</span>
+  <span id="footerDate"></span>
+</footer>
+
+<script>
+/* ═══════════════════════ 지방 6개 도시 DATA ═══════════════════════ */
+let SUMMARY = {
+  "부산": { count: 19667, avg: 45163, median: 37900, min: 1500,  max: 570000 },
+  "대구": { count: 14451, avg: 40528, median: 35000, min: 2450,  max: 330000 },
+  "대전": { count:  8994, avg: 37840, median: 34800, min: 1900,  max: 290000 },
+  "울산": { count:  8071, avg: 35820, median: 32000, min: 2200,  max: 180000 },
+  "창원": { count:  6606, avg: 33783, median: 28500, min: 2200,  max: 174000 },
+  "광주": { count:  8285, avg: 30117, median: 26800, min: 2613,  max: 195000 },
+};
+
+const INFRA = {
+  "부산": { "병원": 88, "마트": 83, "교통": 85, "치안": 70, "공원": 73 },
+  "대구": { "병원": 82, "마트": 77, "교통": 79, "치안": 74, "공원": 70 },
+  "대전": { "병원": 85, "마트": 76, "교통": 83, "치안": 79, "공원": 77 },
+  "울산": { "병원": 74, "마트": 72, "교통": 73, "치안": 81, "공원": 80 },
+  "창원": { "병원": 76, "마트": 70, "교통": 69, "치안": 78, "공원": 83 },
+  "광주": { "병원": 78, "마트": 72, "교통": 71, "치안": 76, "공원": 74 },
+};
+const INFRA_ICON = { "병원": "🏥", "마트": "🛒", "교통": "🚇", "치안": "🛡️", "공원": "🌳" };
+
+const MARKET = {
+  "부산": { peak: 63500, peakDate: "2021 Q4", drop: 28.9, est2028: 48200, timing: "2026 하반기", stars: 3 },
+  "대구": { peak: 57100, peakDate: "2022 Q1", drop: 29.0, est2028: 43500, timing: "2027 상반기", stars: 2 },
+  "대전": { peak: 55000, peakDate: "2022 Q2", drop: 31.2, est2028: 41200, timing: "2026 하반기", stars: 3 },
+  "울산": { peak: 47900, peakDate: "2021 Q4", drop: 25.2, est2028: 38900, timing: "2026 상반기", stars: 4 },
+  "창원": { peak: 41500, peakDate: "2022 Q1", drop: 18.6, est2028: 36800, timing: "2026 상반기", stars: 5 },
+  "광주": { peak: 42400, peakDate: "2022 Q2", drop: 29.0, est2028: 33200, timing: "2026 상반기", stars: 4 },
+};
+
+const BUY = {
+  "창원": { price: 34, infra: 23, timing: 27, total: 84, grade: "A"   },
+  "광주": { price: 36, infra: 22, timing: 24, total: 82, grade: "A"   },
+  "울산": { price: 30, infra: 23, timing: 24, total: 77, grade: "B+"  },
+  "대전": { price: 28, infra: 24, timing: 20, total: 72, grade: "B+"  },
+  "부산": { price: 24, infra: 24, timing: 20, total: 68, grade: "B"   },
+  "대구": { price: 27, infra: 23, timing: 17, total: 67, grade: "B"   },
+};
+
+const BUY28 = {
+  "대전": { price: 32, infra: 24, timing: 31, total: 87, grade: "A+", addDrop: 6.0,  unsold: "빠름", unsoldRisk: "low", pf: "낮음", pfRisk: "low",  comment: "인구 순유입 전환·미분양 2,075가구(6개 도시 최저)·입주 연 7,735가구 적정. 실데이터 기반 2028 최적 진입." },
+  "광주": { price: 38, infra: 22, timing: 27, total: 87, grade: "A+", addDrop: 5.0,  unsold: "빠름", unsoldRisk: "low", pf: "낮음", pfRisk: "low",  comment: "전국 최저가(평균 3억)·입주 연 6,856가구 양호. 인구 유출 변수이나 가격 메리트 압도." },
+  "울산": { price: 33, infra: 23, timing: 25, total: 81, grade: "A",  addDrop: 4.0,  unsold: "중간", unsoldRisk: "low", pf: "낮음", pfRisk: "low",  comment: "입주물량 전국 최저(연 4,765가구). 공급 압박 없어 2028년 가격 방어력 최강." },
+  "창원": { price: 35, infra: 23, timing: 21, total: 79, grade: "B+", addDrop: 7.0,  unsold: "중간", unsoldRisk: "med", pf: "낮음", pfRisk: "low",  comment: "2028년까지 연 1.4만 가구 대량 입주. 공급 과잉 압박으로 추가 하락 불가피." },
+  "대구": { price: 30, infra: 23, timing: 17, total: 70, grade: "B+", addDrop: 10.0, unsold: "느림", unsoldRisk: "high", pf: "중간", pfRisk: "med", comment: "미분양 8,000가구(전국 최다)이나 연초 1.3만→8천으로 감소 추세. 2028년 해소 기대." },
+  "부산": { price: 26, infra: 24, timing: 15, total: 65, grade: "B",  addDrop: 12.0, unsold: "중간", unsoldRisk: "med", pf: "중간", pfRisk: "med", comment: "입주 연 14,205가구·순유출 1.3만명. 2028년까지 하락 압박 지속. 매수는 2028 하반기 이후 검토." },
+};
+
+const STYLE = {
+  "부산": { accent: "#6d3aff", accentClass: "accent-purple", rankClass: "rank-purple", dot: "#6d3aff" },
+  "대구": { accent: "#f53b7a", accentClass: "accent-pink",   rankClass: "rank-pink",   dot: "#f53b7a" },
+  "대전": { accent: "#1a6bff", accentClass: "accent-blue",   rankClass: "rank-blue",   dot: "#1a6bff" },
+  "울산": { accent: "#ff7a1a", accentClass: "accent-orange", rankClass: "rank-orange", dot: "#ff7a1a" },
+  "창원": { accent: "#00b37e", accentClass: "accent-green",  rankClass: "rank-green",  dot: "#00b37e" },
+  "광주": { accent: "#0aabb8", accentClass: "accent-teal",   rankClass: "rank-teal",   dot: "#0aabb8" },
+};
+const ORDER = ["부산","대구","대전","울산","창원","광주"];
+
+/* ═══════════════════════ 서울 25개 구 DATA ═══════════════════════ */
+/* avg/peak 단위: 만원, drop: %, infra/s26/s28: 점수 */
+const SEOUL = [
+  { name:"강남구",  color:"#6d3aff", avg:250000, peak:320000, drop:21.9, redev:"압구정 현대 재건축 (9개 구역)",       gtx:"A",  gtxLabel:"GTX-A 강남·양재",       infra:96, s26:60, g26:"B",   s28:68, g28:"B+",  comment:"압구정 재건축 본격화로 희소성 극대화. 높은 가격대가 진입 장벽." },
+  { name:"서초구",  color:"#f53b7a", avg:220000, peak:292000, drop:24.7, redev:"반포·잠원 래미안원베일리 재건축",      gtx:"A",  gtxLabel:"GTX-A 서초·양재",       infra:94, s26:62, g26:"B",   s28:70, g28:"B+",  comment:"반포 재건축 완료 후 공급 감소. 법원·행정 집중 실수요 탄탄." },
+  { name:"용산구",  color:"#1a6bff", avg:200000, peak:262000, drop:23.7, redev:"한남뉴타운 6개 구역 진행 중",         gtx:"B",  gtxLabel:"GTX-B 용산(예정)",       infra:90, s26:65, g26:"B",   s28:76, g28:"B+",  comment:"한남뉴타운 사업 본격화. 용산 개발 마스터플랜 기대감." },
+  { name:"송파구",  color:"#ff7a1a", avg:170000, peak:222000, drop:23.4, redev:"가락·문정 재건축·재개발",             gtx:"A",  gtxLabel:"GTX-A 잠실(예정)",       infra:91, s26:68, g26:"B",   s28:74, g28:"B+",  comment:"잠실 GTX-A 역세권 수혜. 공급 감소 이후 가격 방어력 강화." },
+  { name:"성동구",  color:"#00b37e", avg:130000, peak:168000, drop:22.6, redev:"성수전략정비구역 대형 복합개발",       gtx:"B",  gtxLabel:"GTX-B 왕십리(예정)",     infra:86, s26:72, g26:"B+",  s28:81, g28:"A",   comment:"성수 글로벌업무복합지구 지정. 왕십리 GTX-B 환승 효과 기대." },
+  { name:"마포구",  color:"#0aabb8", avg:120000, peak:156000, drop:23.1, redev:"아현·공덕뉴타운 완료",               gtx:"A",  gtxLabel:"GTX-A 연신내(인접)",     infra:87, s26:71, g26:"B+",  s28:77, g28:"B+",  comment:"홍대·공덕 문화인프라 강점. 공급 일단락으로 가격 하방 지지." },
+  { name:"광진구",  color:"#6d3aff", avg:110000, peak:141000, drop:22.0, redev:"구의·자양 재건축 진행",              gtx:"B",  gtxLabel:"GTX-B 건대입구(예정)",   infra:83, s26:69, g26:"B",   s28:74, g28:"B+",  comment:"GTX-B 건대입구 역세권. 강남 접근성 개선으로 수요 증가 기대." },
+  { name:"강동구",  color:"#f53b7a", avg:110000, peak:145000, drop:24.1, redev:"올림픽파크포레온(둔촌주공) 완공",     gtx:"D",  gtxLabel:"GTX-D 강일(예정)",       infra:82, s26:70, g26:"B+",  s28:76, g28:"B+",  comment:"올림픽파크포레온 입주 완료. GTX-D 강일역 개발 효과." },
+  { name:"동작구",  color:"#1a6bff", avg:120000, peak:152000, drop:21.1, redev:"흑석뉴타운 막바지 완성 단계",         gtx:"C",  gtxLabel:"GTX-C 금정(예정)",       infra:81, s26:71, g26:"B+",  s28:76, g28:"B+",  comment:"흑석뉴타운 완성 단계. 한강변 입지·노들섬 개발 기대감." },
+  { name:"양천구",  color:"#ff7a1a", avg:110000, peak:142000, drop:22.5, redev:"목동 재건축 14개 단지 진행",          gtx:"B",  gtxLabel:"GTX-B 목동(예정)",       infra:80, s26:72, g26:"B+",  s28:79, g28:"B+",  comment:"목동 재건축 14개 단지 진행. GTX-B 목동역 확정으로 가격 선반영 중." },
+  { name:"영등포구",color:"#00b37e", avg:100000, peak:130000, drop:23.1, redev:"영등포·여의도 재건축 추진",           gtx:"B",  gtxLabel:"GTX-B 여의도(예정)",     infra:82, s26:70, g26:"B+",  s28:75, g28:"B+",  comment:"여의도 금융허브 재건축 기대. GTX-B 여의도역 업무지구 효과." },
+  { name:"강서구",  color:"#0aabb8", avg:90000,  peak:116000, drop:22.4, redev:"마곡 R&D 지구 완성",                 gtx:"D",  gtxLabel:"GTX-D 김포공항(예정)",   infra:78, s26:72, g26:"B+",  s28:77, g28:"B+",  comment:"마곡 R&D 클러스터 완성으로 배후 실수요 탄탄. GTX-D 확정." },
+  { name:"동대문구",color:"#6d3aff", avg:85000,  peak:112000, drop:24.1, redev:"이문·휘경뉴타운 완공 임박",           gtx:"B",  gtxLabel:"GTX-B 청량리(예정)",     infra:76, s26:74, g26:"B+",  s28:81, g28:"A",   comment:"이문·휘경뉴타운 완공 + GTX-B 청량리. 동북권 최대 교통 허브로 성장." },
+  { name:"노원구",  color:"#f53b7a", avg:75000,  peak:98000,  drop:23.5, redev:"상계주공 재건축 1~16단지",           gtx:"C",  gtxLabel:"GTX-C 노원(예정)",       infra:72, s26:73, g26:"B+",  s28:79, g28:"B+",  comment:"상계주공 재건축 + GTX-C 노원. 서울 북부 최대 공급 이벤트." },
+  { name:"서대문구",color:"#1a6bff", avg:85000,  peak:110000, drop:22.7, redev:"가좌·홍은·북가좌 재개발",            gtx:"A",  gtxLabel:"GTX-A 연신내(기개통)",   infra:75, s26:69, g26:"B",   s28:73, g28:"B+",  comment:"연신내 GTX-A 기개통. 홍제·홍은 재개발 가속화." },
+  { name:"은평구",  color:"#ff7a1a", avg:80000,  peak:103000, drop:22.3, redev:"수색·증산·응암 재개발",              gtx:"A",  gtxLabel:"GTX-A 연신내(기개통)",   infra:73, s26:70, g26:"B+",  s28:74, g28:"B+",  comment:"연신내 GTX-A 기개통 효과 흡수 중. 수색·증산뉴타운 진행." },
+  { name:"성북구",  color:"#00b37e", avg:80000,  peak:102000, drop:21.6, redev:"장위뉴타운 1~15구역",               gtx:"C",  gtxLabel:"GTX-C 광운대(예정)",     infra:74, s26:71, g26:"B+",  s28:76, g28:"B+",  comment:"장위뉴타운 최대 규모 진행. GTX-C 광운대 역세권 수혜." },
+  { name:"관악구",  color:"#0aabb8", avg:75000,  peak:95000,  drop:21.1, redev:"신림뉴타운·봉천 재개발",             gtx:"X",  gtxLabel:"신림선(기개통)·GTX 없음", infra:72, s26:66, g26:"B",   s28:70, g28:"B+",  comment:"신림선 개통 후 접근성 개선. 서울대 인접 고정 실수요." },
+  { name:"구로구",  color:"#6d3aff", avg:75000,  peak:96000,  drop:21.9, redev:"구로·개봉 재개발",                  gtx:"B",  gtxLabel:"GTX-B 구로(예정)",       infra:74, s26:67, g26:"B",   s28:72, g28:"B+",  comment:"GTX-B 구로 역세권 기대. 가산디지털단지 배후 수요." },
+  { name:"강북구",  color:"#f53b7a", avg:65000,  peak:83000,  drop:21.7, redev:"미아뉴타운 막바지 완성",             gtx:"C",  gtxLabel:"GTX-C 창동(예정)",       infra:68, s26:65, g26:"B",   s28:71, g28:"B+",  comment:"GTX-C 창동 공유. 미아뉴타운 마무리 단계." },
+  { name:"도봉구",  color:"#1a6bff", avg:65000,  peak:85000,  drop:23.5, redev:"창동·도봉 재개발",                  gtx:"C",  gtxLabel:"GTX-C 창동(예정)",       infra:69, s26:64, g26:"B",   s28:71, g28:"B+",  comment:"창동 GTX-C + 창동역세권 개발사업 연계." },
+  { name:"중랑구",  color:"#ff7a1a", avg:70000,  peak:90000,  drop:22.2, redev:"망우·신내·중화 재개발",             gtx:"B",  gtxLabel:"GTX-B 신내(예정)",       infra:70, s26:66, g26:"B",   s28:71, g28:"B+",  comment:"GTX-B 신내역 예정. 망우·신내 재개발로 주거환경 개선." },
+  { name:"종로구",  color:"#00b37e", avg:100000, peak:125000, drop:20.0, redev:"돈의문·경복궁 인근 재개발",          gtx:"A",  gtxLabel:"GTX-A 서울역(인근)",     infra:83, s26:64, g26:"B",   s28:68, g28:"B",   comment:"역사·관광 인프라 최고. 공급 희소성은 강점이나 거래 유동성 제한." },
+  { name:"중구",    color:"#0aabb8", avg:95000,  peak:120000, drop:20.8, redev:"신당·황학·을지로 재개발",           gtx:"A",  gtxLabel:"GTX-A 서울역(인근)",     infra:81, s26:63, g26:"B",   s28:67, g28:"B",   comment:"도심권 공급 희소성. 재개발 진행 시 가치 상승 기대." },
+  { name:"금천구",  color:"#6d3aff", avg:65000,  peak:82000,  drop:20.7, redev:"시흥·독산·가산 재개발",             gtx:"X",  gtxLabel:"신안산선(예정)·GTX 없음", infra:70, s26:63, g26:"B",   s28:68, g28:"B",   comment:"신안산선 기대감. 가산·금천 산업단지 배후 수요 안정적." },
+];
+
+/* ═══════════════════════ HELPERS ═══════════════════════ */
+function fmtPrice(w) {
+  if (w >= 10000) {
+    const e = Math.floor(w / 10000), m = Math.round(w % 10000);
+    return m ? `${e}억 ${m.toLocaleString()}만원` : `${e}억원`;
+  }
+  return `${Math.round(w).toLocaleString()}만원`;
+}
+function fmtShort(w) {
+  return w >= 10000 ? `${(w/10000).toFixed(1)}억` : `${Math.round(w/1000)}천만`;
+}
+function gradeClass(g) {
+  if (g === "A+") return "grade-Aplus";
+  if (g === "A")  return "grade-A";
+  if (g === "B+") return "grade-Bplus";
+  return "grade-B";
+}
+function scoreColor(t, accent) {
+  return t >= 85 ? "#00875a" : t >= 80 ? accent : t >= 70 ? "#1a6bff" : "#888";
+}
+function gtxClass(code) {
+  return { A:"gtx-a", B:"gtx-b", C:"gtx-c", D:"gtx-d", X:"gtx-none" }[code] || "gtx-none";
+}
+function pillClass(g) {
+  return { "A+":"g-Aplus", "A":"g-A", "B+":"g-Bplus", "B":"g-B" }[g] || "g-B";
+}
+
+/* ═══════════════════════ TAB SWITCHING ═══════════════════════ */
+function switchTab(n) {
+  [1,2,3].forEach(i => {
+    document.getElementById("tabPanel"+i).classList.toggle("active", i===n);
+    document.getElementById("tabBtn"+i).classList.toggle("active", i===n);
+  });
+}
+
+/* ═══════════════════════ 지방 6개 도시 RENDER ═══════════════════════ */
+function renderDynamic() {
+  document.getElementById("cityGrid").innerHTML   = "";
+  document.getElementById("barChart").innerHTML   = "";
+  document.getElementById("infraGrid").innerHTML  = "";
+  document.getElementById("marketBody").innerHTML = "";
+
+  const entries = Object.entries(SUMMARY);
+  const total   = entries.reduce((a,[,s])=>a+s.count,0);
+  const maxAvg  = Math.max(...entries.map(([,s])=>s.avg));
+  const minAvg  = Math.min(...entries.map(([,s])=>s.avg));
+  const topCity = entries.find(([,s])=>s.avg===maxAvg)[0];
+  const botCity = entries.find(([,s])=>s.avg===minAvg)[0];
+  document.getElementById("kpiTotal").textContent    = total.toLocaleString()+"건";
+  document.getElementById("kpiTop").textContent      = topCity;
+  document.getElementById("kpiTopSub").textContent   = fmtPrice(maxAvg);
+  document.getElementById("kpiRatio").textContent    = (maxAvg/minAvg).toFixed(2)+"배";
+  document.getElementById("kpiRatioSub").textContent = `${topCity} vs ${botCity}`;
+
+  /* City Cards */
+  const cityGrid = document.getElementById("cityGrid");
+  ORDER.forEach((city, idx) => {
+    const s = SUMMARY[city], st = STYLE[city];
+    const el = document.createElement("div");
+    el.className = "city-card";
+    el.innerHTML = `
+      <div class="card-accent ${st.accentClass}"></div>
+      <div class="card-body">
+        <div class="card-rank ${st.rankClass}">#${idx+1} 평균가 순위</div>
+        <div class="city-name">${city}</div>
+        <div class="city-count">${s.count.toLocaleString()}건 거래 (해제 제외)</div>
+        <div class="price-row">
+          <div><div class="price-label">평균 매매가</div><div class="price-value">${fmtPrice(s.avg)}</div></div>
+          <div style="text-align:right"><div class="price-label">중위 매매가</div><div class="price-value-sm">${fmtPrice(s.median)}</div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="stats-row">
+          <div class="stat-item"><div class="stat-label">최저</div><div class="stat-val">${fmtPrice(s.min)}</div></div>
+          <div class="stat-item"><div class="stat-label">최고</div><div class="stat-val">${fmtPrice(s.max)}</div></div>
+          <div class="stat-item"><div class="stat-label">평균/중위</div><div class="stat-val">${(s.avg/s.median).toFixed(2)}x</div></div>
+        </div>
+      </div>`;
+    cityGrid.appendChild(el);
+  });
+
+  /* Bar Chart */
+  const barChart = document.getElementById("barChart");
+  ORDER.forEach(city => {
+    const s = SUMMARY[city], st = STYLE[city];
+    const pct = (s.avg / maxAvg * 100).toFixed(1);
+    const row = document.createElement("div");
+    row.className = "bar-row";
+    row.innerHTML = `
+      <div class="bar-city">${city}</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${st.accent};">${fmtShort(s.avg)}</div></div>
+      <div class="bar-amt">${fmtPrice(s.avg)}</div>`;
+    barChart.appendChild(row);
+  });
+
+  /* Infra Cards */
+  const infraGrid = document.getElementById("infraGrid");
+  ORDER.forEach(city => {
+    const inf = INFRA[city], st = STYLE[city];
+    const avg = Math.round(Object.values(inf).reduce((a,b)=>a+b,0)/5);
+    const bgc = avg>=80?"#e6fff6":avg>=70?"#ebf2ff":"#f5f5f5";
+    const txc = avg>=80?"#00875a":avg>=70?"#1a6bff":"#555";
+    let rows = "";
+    for (const [item, score] of Object.entries(inf)) {
+      rows += `<div class="infra-row">
+        <div class="infra-meta">
+          <span class="infra-item-label">${INFRA_ICON[item]} ${item}</span>
+          <span class="infra-item-score">${score}</span>
+        </div>
+        <div class="infra-track"><div class="infra-fill" style="width:${score}%;background:${st.accent};"></div></div>
+      </div>`;
+    }
+    const card = document.createElement("div");
+    card.className = "infra-card";
+    card.innerHTML = `
+      <div class="infra-header">
+        <div class="infra-dot" style="background:${st.dot};"></div>
+        <div class="infra-city-nm">${city}</div>
+        <div class="infra-avg-badge" style="background:${bgc};color:${txc};">평균 ${avg}점</div>
+      </div>
+      <div class="infra-body">${rows}</div>`;
+    infraGrid.appendChild(card);
+  });
+
+  /* Market Table */
+  const marketBody = document.getElementById("marketBody");
+  ORDER.forEach(city => {
+    const m = MARKET[city], s = SUMMARY[city], st = STYLE[city];
+    const dc = m.drop>=30?"drop-high":m.drop>=25?"drop-med":"drop-low";
+    const stars = "●".repeat(m.stars)+"○".repeat(5-m.stars);
+    const sc = m.stars>=4?"#00875a":m.stars>=3?"#d47a00":"#aaa";
+    const row = document.createElement("div");
+    row.className = "market-row";
+    row.innerHTML = `
+      <div class="market-td"><span class="market-city" style="color:${st.accent}">${city}</span></div>
+      <div class="market-td">${fmtPrice(m.peak)}<span style="font-size:11px;color:#aaa;margin-left:6px;">${m.peakDate}</span></div>
+      <div class="market-td">${fmtPrice(s.avg)}</div>
+      <div class="market-td"><span class="drop-badge ${dc}">▼ ${m.drop}%</span></div>
+      <div class="market-td">${fmtPrice(m.est2028)}<span style="font-size:11px;color:#00875a;margin-left:6px;">+${((m.est2028/s.avg-1)*100).toFixed(1)}%</span></div>
+      <div class="market-td" style="flex-direction:column;align-items:flex-start;gap:4px;">
+        <span style="font-size:13px;color:${sc};letter-spacing:1px;">${stars}</span>
+        <span style="font-size:12px;font-weight:600;color:#444;">${m.timing}</span>
+      </div>`;
+    marketBody.appendChild(row);
+  });
+}
+
+/* Buy Score (Dual) */
+function dimsHTML(b, accent) {
+  return [
+    { label: "가격 매력도", score: b.price,  max: 40, color: accent    },
+    { label: "인프라",      score: b.infra,  max: 25, color: "#1a6bff" },
+    { label: "타이밍",      score: b.timing, max: 35, color: "#00b37e" },
+  ].map(d => `
+    <div class="sdim-row">
+      <div class="sdim-head">
+        <span class="sdim-label">${d.label}<span style="color:#ccc;font-weight:400;"> /${d.max}</span></span>
+        <span class="sdim-val">${d.score}</span>
+      </div>
+      <div class="sdim-track"><div class="sdim-fill" style="width:${d.score/d.max*100}%;background:${d.color};"></div></div>
+    </div>`).join("");
+}
+
+const buyGrid  = document.getElementById("buyGrid");
+const buyOrder = ORDER.slice().sort((a,b) => BUY28[b].total - BUY28[a].total);
+buyOrder.forEach((city, rank) => {
+  const b = BUY[city], b28 = BUY28[city], st = STYLE[city];
+  const delta = b28.total - b.total;
+  const arrowIcon  = delta > 0 ? "↑" : delta < 0 ? "↓" : "→";
+  const deltaClass = delta > 0 ? "delta-up" : delta < 0 ? "delta-dn" : "delta-eq";
+  const deltaLabel = (delta > 0 ? "+" : "") + delta;
+  const card = document.createElement("div");
+  card.className = "buy-card";
+  card.innerHTML = `
+    <div class="card-accent ${st.accentClass}"></div>
+    <div class="buy-card-header">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">#${rank+1} 2028 추천 순위</div>
+        <div class="buy-city-nm" style="color:${st.accent}">${city}</div>
+      </div>
+      <div class="buy-rank-tag ${gradeClass(b28.grade)}" style="font-size:13px;font-weight:900;padding:5px 12px;">2028&thinsp;${b28.grade}</div>
+    </div>
+    <div class="buy-dual">
+      <div class="score-panel">
+        <div class="score-era"><div class="score-era-dot" style="background:#aaa;"></div>현재 2026</div>
+        <div class="score-top">
+          <span class="score-num" style="color:${scoreColor(b.total,st.accent)};">${b.total}</span>
+          <span class="score-denom">/100</span>
+          <span class="score-grade ${gradeClass(b.grade)}">${b.grade}</span>
+        </div>
+        <div class="score-dims">${dimsHTML(b, st.accent)}</div>
+      </div>
+      <div class="score-arrow">
+        <div class="arrow-icon ${deltaClass}">${arrowIcon}</div>
+        <div class="arrow-delta ${deltaClass}">${deltaLabel}</div>
+      </div>
+      <div class="score-panel right">
+        <div class="score-era"><div class="score-era-dot" style="background:${st.accent};"></div>예상 2028</div>
+        <div class="score-top">
+          <span class="score-num" style="color:${scoreColor(b28.total,st.accent)};">${b28.total}</span>
+          <span class="score-denom">/100</span>
+          <span class="score-grade ${gradeClass(b28.grade)}">${b28.grade}</span>
+        </div>
+        <div class="score-dims">${dimsHTML(b28, st.accent)}</div>
+      </div>
+    </div>
+    <div class="buy-risk">
+      <div class="risk-chip risk-${b28.pfRisk}"><div class="risk-dot risk-dot-${b28.pfRisk}"></div>PF 리스크&ensp;<strong>${b28.pf}</strong></div>
+      <div class="risk-chip risk-${b28.unsoldRisk}"><div class="risk-dot risk-dot-${b28.unsoldRisk}"></div>미분양 해소&ensp;<strong>${b28.unsold}</strong></div>
+      <div class="risk-chip ${b28.addDrop>=10?'risk-high':b28.addDrop>=6?'risk-med':'risk-low'}">
+        <div class="risk-dot ${b28.addDrop>=10?'risk-dot-high':b28.addDrop>=6?'risk-dot-med':'risk-dot-low'}"></div>
+        추가 하락&ensp;<strong>−${b28.addDrop}%</strong>
+      </div>
+    </div>
+    <div class="buy-comment-row">${b28.comment}</div>`;
+  buyGrid.appendChild(card);
+});
+
+/* ═══════════════════════ 서울 25개 구 RENDER ═══════════════════════ */
+function renderSeoul() {
+  /* Top 3 카드 (2028 점수 기준) */
+  const top3 = SEOUL.slice().sort((a,b)=>b.s28-a.s28).slice(0,3);
+  const accentColors = ["#6d3aff","#1a6bff","#00b37e"];
+  const accentBg     = ["accent-purple","accent-blue","accent-green"];
+  const rankBg       = ["rank-purple","rank-blue","rank-green"];
+  const rankLabels   = ["#1 2028 추천","#2 2028 추천","#3 2028 추천"];
+
+  const top3el = document.getElementById("seoulTop3");
+  top3.forEach((d, i) => {
+    const delta = d.s28 - d.s26;
+    const dClass = delta > 0 ? "delta-up" : "delta-dn";
+    const dLabel = (delta>0?"+":"")+delta;
+    const card = document.createElement("div");
+    card.className = "top-card";
+    card.innerHTML = `
+      <div class="top-card-accent" style="background:${accentColors[i]};"></div>
+      <div class="top-card-body">
+        <div class="top-card-rank ${rankBg[i]}">${rankLabels[i]}</div>
+        <div class="top-card-name" style="color:${accentColors[i]};">${d.name}</div>
+        <div class="top-dual">
+          <div class="top-score-wrap">
+            <div class="top-score-label">현재 2026</div>
+            <div class="top-score-num" style="color:#888;">${d.s26}<span class="top-score-den">/100</span></div>
+          </div>
+          <div class="top-arrow-col">
+            <span class="${dClass}" style="font-size:18px;">→</span>
+            <span class="${dClass}" style="font-size:11px;font-weight:800;">${dLabel}</span>
+          </div>
+          <div class="top-score-wrap">
+            <div class="top-score-label">예상 2028</div>
+            <div class="top-score-num" style="color:${accentColors[i]};">${d.s28}<span class="top-score-den">/100</span></div>
+          </div>
+        </div>
+        <div class="top-divider"></div>
+        <div class="top-facts">
+          <div class="top-fact-row"><span class="top-fact-lbl">현재 평균가</span><span class="top-fact-val">${fmtShort(d.avg)}</span></div>
+          <div class="top-fact-row"><span class="top-fact-lbl">전고점 하락</span><span class="top-fact-val" style="color:#e53030;">▼${d.drop}%</span></div>
+          <div class="top-fact-row"><span class="top-fact-lbl">GTX 호재</span><span class="top-fact-val">${d.gtxLabel}</span></div>
+          <div class="top-fact-row"><span class="top-fact-lbl">인프라 스코어</span><span class="top-fact-val">${d.infra}점</span></div>
+        </div>
+        <div class="top-comment">${d.comment}</div>
+      </div>`;
+    top3el.appendChild(card);
+  });
+
+  /* Full Table */
+  renderSeoulTable(SEOUL.slice(), null, null);
+}
+
+let _sortCol = "s28", _sortDir = "desc";
+
+function renderSeoulTable(data, col, dir) {
+  if (col) {
+    if (_sortCol === col) {
+      _sortDir = _sortDir === "asc" ? "desc" : "asc";
+    } else {
+      _sortCol = col; _sortDir = dir || "desc";
+    }
+  }
+  const isNum = (v) => typeof v === "number";
+  data.sort((a,b) => {
+    const va = a[_sortCol], vb = b[_sortCol];
+    const cmp = isNum(va) ? va - vb : String(va).localeCompare(String(vb), "ko");
+    return _sortDir === "asc" ? cmp : -cmp;
+  });
+
+  /* Update header sort indicators */
+  document.querySelectorAll(".seoul-table th").forEach(th => {
+    th.classList.remove("sort-asc","sort-desc");
+    if (th.dataset.col === _sortCol) th.classList.add(_sortDir === "asc" ? "sort-asc" : "sort-desc");
+  });
+
+  const tbody = document.getElementById("seoulTbody");
+  tbody.innerHTML = "";
+  data.forEach((d, idx) => {
+    const delta = d.s28 - d.s26;
+    const dCls  = delta >= 0 ? "sc-up" : "sc-dn";
+    const dLbl  = (delta>0?"+":"")+delta;
+    const dc    = d.drop >= 24 ? "drop-high" : d.drop >= 22 ? "drop-med" : "drop-low";
+    const ic    = d.infra >= 85 ? "#00875a" : d.infra >= 75 ? "#1a6bff" : "#888";
+    const tr    = document.createElement("tr");
+    tr.innerHTML = `
+      <td style="color:#aaa;font-size:12px;font-weight:700;text-align:center;">${idx+1}</td>
+      <td><div class="gu-cell"><div class="gu-dot" style="background:${d.color};"></div><span class="gu-nm">${d.name}</span></div></td>
+      <td>${fmtShort(d.avg)}</td>
+      <td style="color:#888;">${fmtShort(d.peak)}</td>
+      <td><span class="drop-badge ${dc}">▼ ${d.drop}%</span></td>
+      <td class="redev-td">${d.redev}</td>
+      <td><span class="gtx-pill ${gtxClass(d.gtx)}">${d.gtxLabel}</span></td>
+      <td>
+        <div class="infra-cell">
+          <div class="infra-bar"><div class="infra-bar-fill" style="width:${d.infra}%;background:${d.color};"></div></div>
+          <span class="infra-num" style="color:${ic};">${d.infra}</span>
+        </div>
+      </td>
+      <td><span class="score-pill ${pillClass(d.g26)}">${d.s26}</span></td>
+      <td>
+        <span class="score-pill ${pillClass(d.g28)}">${d.s28}</span>
+        <span class="sc-delta ${dCls}">${dLbl}</span>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* Table header click → sort */
+document.querySelectorAll(".seoul-table th[data-col]").forEach(th => {
+  th.addEventListener("click", () => {
+    renderSeoulTable(SEOUL.slice(), th.dataset.col, null);
+  });
+});
+
+/* ═══════════════════════ FOOTER & SERVER ═══════════════════════ */
+document.getElementById("footerDate").textContent =
+  "생성: " + new Date().toLocaleDateString("ko-KR", { year:"numeric", month:"long", day:"numeric" });
+
+const IS_SERVER = location.protocol !== "file:";
+let _pollTimer  = null;
+
+function setRefreshUI(status, label) {
+  document.getElementById("refreshDot").className   = "refresh-dot " + status;
+  document.getElementById("refreshLabel").textContent = label;
+  document.getElementById("refreshBtn").className   = "refresh-btn" + (status==="running"?" running":"");
+}
+function updateDataBadge(meta) {
+  if (!meta || !meta.downloaded_at) return;
+  const d = new Date(meta.downloaded_at);
+  document.getElementById("dataBadge").textContent =
+    "기준: " + d.toLocaleDateString("ko-KR",{month:"long",day:"numeric"}) +
+    " " + d.toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"});
+}
+
+async function loadData() {
+  if (!IS_SERVER) {
+    /* file:// 로 열면 서버 API를 호출할 수 없음 */
+    document.getElementById("dataBadge").textContent = "⚠ http://localhost:8080 으로 접속하세요";
+    document.getElementById("dataBadge").style.color = "#e53030";
+    return;
+  }
+  try {
+    const res = await fetch("/api/data");
+    if (!res.ok) {
+      setRefreshUI("error", `서버 오류 ${res.status}`);
+      return;
+    }
+    const data = await res.json();
+    if (data.summary && Object.keys(data.summary).length > 0) {
+      SUMMARY = data.summary;
+      renderDynamic();
+      updateDataBadge(data.meta);
+      setRefreshUI("live", "데이터 새로고침");
+    } else {
+      setRefreshUI("error", "데이터 없음 — 새로고침 필요");
+    }
+  } catch (err) {
+    setRefreshUI("error", "연결 실패 — 서버 실행 확인");
+    console.error("[loadData]", err);
+  }
+}
+
+async function pollStatus() {
+  try {
+    const res = await fetch("/api/status");
+    const s = await res.json();
+    if (s.status === "running") {
+      setRefreshUI("running", "수집 중…");
+      document.getElementById("loadingMsg").textContent = s.message;
+      _pollTimer = setTimeout(pollStatus, 2000);
+    } else if (s.status === "done") {
+      document.getElementById("loadingOverlay").classList.remove("show");
+      await loadData();
+      setRefreshUI("live", "데이터 새로고침");
+    } else if (s.status === "error") {
+      document.getElementById("loadingOverlay").classList.remove("show");
+      setRefreshUI("error", "오류 — 다시 시도");
+      alert("데이터 수집 오류:\n" + s.message);
+    }
+  } catch (_) {
+    document.getElementById("loadingOverlay").classList.remove("show");
+  }
+}
+
+async function triggerRefresh() {
+  if (!IS_SERVER) { alert("서버 모드에서만 사용 가능합니다.\nrun_dashboard.bat 을 실행해주세요."); return; }
+  try {
+    const res = await fetch("/api/refresh", { method: "POST" });
+    const s = await res.json();
+    if (s.status === "running") {
+      document.getElementById("loadingOverlay").classList.add("show");
+      setRefreshUI("running", "수집 중…");
+      clearTimeout(_pollTimer);
+      _pollTimer = setTimeout(pollStatus, 2000);
+    }
+  } catch (_) {}
+}
+
+/* ═══════════════════════ 청약 DATA ═══════════════════════ */
+/*
+ * status: 접수예정 | 접수중 | 당첨발표 | 계약중 | 완료
+ * avgPrice / marketPrice: 만원 (전용 84㎡ 기준 추산)
+ * premium = (marketPrice / avgPrice - 1) * 100  (양수 = 시세 > 분양가 → 유리)
+ * region: 서울 | 지방
+ */
+const CHEONGAK = [
+  { id:1,  name:"청담 르엘",              city:"서울 강남구",   region:"서울", type:"민영·재건축",
+    status:"접수예정",
+    receiptStart:"2026-06-09", receiptEnd:"2026-06-11",
+    winnerDate:"2026-06-24",   contractStart:"2026-07-01", contractEnd:"2026-07-04",
+    units:1261, unitType:"49~84㎡", avgPrice:320000, marketPrice:430000,
+    completion:"2029-06", competition:"80~120:1", color:"#6d3aff",
+    contractRatio:20,
+    subway:[{line:"7",name:"청담역"},{line:"수분",name:"압구정로데오역"}] },
+
+  { id:2,  name:"래미안 서초 에스티지",   city:"서울 서초구",   region:"서울", type:"민영·재건축",
+    status:"접수중",
+    receiptStart:"2026-05-19", receiptEnd:"2026-05-21",
+    winnerDate:"2026-06-03",   contractStart:"2026-06-10", contractEnd:"2026-06-12",
+    units:612,  unitType:"59~84㎡", avgPrice:275000, marketPrice:360000,
+    completion:"2028-12", competition:"60~90:1", color:"#f53b7a",
+    contractRatio:20,
+    subway:[{line:"2",name:"방배역"},{line:"4",name:"사당역"}] },
+
+  { id:3,  name:"한남 더힐 2차",          city:"서울 용산구",   region:"서울", type:"민영·재건축",
+    status:"접수예정",
+    receiptStart:"2026-06-16", receiptEnd:"2026-06-18",
+    winnerDate:"2026-07-01",   contractStart:"2026-07-08", contractEnd:"2026-07-10",
+    units:380,  unitType:"84~244㎡", avgPrice:450000, marketPrice:560000,
+    completion:"2030-03", competition:"30~50:1", color:"#1a6bff",
+    contractRatio:20,
+    subway:[{line:"6",name:"한강진역"},{line:"6",name:"녹사평역"}] },
+
+  { id:4,  name:"성수 자이 그랜드파크",   city:"서울 성동구",   region:"서울", type:"민영·재개발",
+    status:"접수중",
+    receiptStart:"2026-05-20", receiptEnd:"2026-05-22",
+    winnerDate:"2026-06-05",   contractStart:"2026-06-12", contractEnd:"2026-06-14",
+    units:840,  unitType:"59~84㎡", avgPrice:178000, marketPrice:240000,
+    completion:"2028-09", competition:"40~70:1", color:"#00b37e",
+    contractRatio:10,
+    subway:[{line:"2",name:"성수역"},{line:"2",name:"뚝섬역"}] },
+
+  { id:5,  name:"이문 아이파크 자이",     city:"서울 동대문구", region:"서울", type:"민영·뉴타운",
+    status:"당첨발표",
+    receiptStart:"2026-05-07", receiptEnd:"2026-05-09",
+    winnerDate:"2026-05-23",   contractStart:"2026-05-28", contractEnd:"2026-05-30",
+    units:4321, unitType:"39~84㎡", avgPrice:83000, marketPrice:107000,
+    completion:"2028-06", competition:"15~30:1", color:"#ff7a1a",
+    contractRatio:10,
+    subway:[{line:"1",name:"회기역"},{line:"1",name:"외대앞역"}] },
+
+  { id:6,  name:"목동 파크자이",          city:"서울 양천구",   region:"서울", type:"민영·재건축",
+    status:"접수예정",
+    receiptStart:"2026-06-23", receiptEnd:"2026-06-25",
+    winnerDate:"2026-07-08",   contractStart:"2026-07-15", contractEnd:"2026-07-17",
+    units:2700, unitType:"59~115㎡", avgPrice:118000, marketPrice:142000,
+    completion:"2029-09", competition:"20~40:1", color:"#0aabb8",
+    contractRatio:10,
+    subway:[{line:"5",name:"목동역"},{line:"5",name:"오목교역"}] },
+
+  { id:7,  name:"상계 더샵 스카이뷰",     city:"서울 노원구",   region:"서울", type:"민영·재건축",
+    status:"계약중",
+    receiptStart:"2026-05-05", receiptEnd:"2026-05-07",
+    winnerDate:"2026-05-19",   contractStart:"2026-05-26", contractEnd:"2026-05-30",
+    units:1890, unitType:"39~84㎡", avgPrice:57000, marketPrice:73000,
+    completion:"2028-03", competition:"8~18:1", color:"#6d3aff",
+    contractRatio:10,
+    subway:[{line:"4",name:"노원역"},{line:"7",name:"노원역"},{line:"4",name:"상계역"}] },
+
+  { id:8,  name:"마포 더클래시",          city:"서울 마포구",   region:"서울", type:"민영·재개발",
+    status:"접수예정",
+    receiptStart:"2026-07-07", receiptEnd:"2026-07-09",
+    winnerDate:"2026-07-22",   contractStart:"2026-07-29", contractEnd:"2026-07-31",
+    units:670,  unitType:"59~84㎡", avgPrice:138000, marketPrice:162000,
+    completion:"2029-03", competition:"25~45:1", color:"#f53b7a",
+    contractRatio:10,
+    subway:[{line:"5",name:"공덕역"},{line:"6",name:"공덕역"},{line:"경의",name:"공덕역"}] },
+
+  { id:9,  name:"해운대 두산위브 더센트럴", city:"부산 해운대구", region:"지방", type:"민영",
+    status:"접수중",
+    receiptStart:"2026-05-19", receiptEnd:"2026-05-21",
+    winnerDate:"2026-06-03",   contractStart:"2026-06-10", contractEnd:"2026-06-12",
+    units:980,  unitType:"59~84㎡", avgPrice:87000, marketPrice:95000,
+    completion:"2028-06", competition:"5~12:1", color:"#6d3aff", contractRatio:10,
+    subway:[{line:"부산2",name:"해운대역"},{line:"부산2",name:"중동역"}] },
+
+  { id:10, name:"수성 더샵 프레스티지",    city:"대구 수성구",   region:"지방", type:"민영",
+    status:"접수예정",
+    receiptStart:"2026-06-02", receiptEnd:"2026-06-04",
+    winnerDate:"2026-06-17",   contractStart:"2026-06-24", contractEnd:"2026-06-26",
+    units:450,  unitType:"59~84㎡", avgPrice:63000, marketPrice:76000,
+    completion:"2028-12", competition:"6~14:1", color:"#f53b7a", contractRatio:10,
+    subway:[{line:"대구3",name:"수성못역"}] },
+
+  { id:11, name:"도안 자이 2차",           city:"대전 유성구",   region:"지방", type:"민영",
+    status:"당첨발표",
+    receiptStart:"2026-05-08", receiptEnd:"2026-05-12",
+    winnerDate:"2026-05-26",   contractStart:"2026-06-02", contractEnd:"2026-06-05",
+    units:1200, unitType:"59~84㎡", avgPrice:51000, marketPrice:55000,
+    completion:"2028-06", competition:"4~9:1", color:"#1a6bff", contractRatio:10,
+    subway:[{line:"대전1",name:"반석역"}] },
+
+  { id:12, name:"울산 롯데캐슬 센트럴",    city:"울산 남구",     region:"지방", type:"민영",
+    status:"접수예정",
+    receiptStart:"2026-06-10", receiptEnd:"2026-06-12",
+    winnerDate:"2026-06-25",   contractStart:"2026-07-02", contractEnd:"2026-07-04",
+    units:780,  unitType:"59~84㎡", avgPrice:46000, marketPrice:48000,
+    completion:"2028-09", competition:"3~7:1", color:"#ff7a1a", contractRatio:10 },
+
+  { id:13, name:"창원 마린자이",           city:"창원 성산구",   region:"지방", type:"민영",
+    status:"접수중",
+    receiptStart:"2026-05-21", receiptEnd:"2026-05-23",
+    winnerDate:"2026-06-04",   contractStart:"2026-06-11", contractEnd:"2026-06-13",
+    units:560,  unitType:"59~84㎡", avgPrice:37000, marketPrice:39500,
+    completion:"2028-06", competition:"3~6:1", color:"#00b37e", contractRatio:10 },
+
+  { id:14, name:"첨단 힐스테이트 6차",     city:"광주 광산구",   region:"지방", type:"민영",
+    status:"계약중",
+    receiptStart:"2026-05-06", receiptEnd:"2026-05-08",
+    winnerDate:"2026-05-21",   contractStart:"2026-05-27", contractEnd:"2026-05-30",
+    units:890,  unitType:"59~84㎡", avgPrice:30000, marketPrice:31500,
+    completion:"2028-03", competition:"2~5:1", color:"#0aabb8", contractRatio:10,
+    subway:[{line:"광주1",name:"첨단역"}] },
+];
+
+/* ── 지하철 노선 색상 ── */
+const SUBWAY_COLOR = {
+  /* 서울 */
+  "1":"#0052A4","2":"#00A84D","3":"#EF7C1C","4":"#00A5DE",
+  "5":"#996CAC","6":"#CD7C2F","7":"#747F00",
+  "경의":"#77C4A8","수분":"#FABE00","신림":"#8B1A4A",
+  /* 지방 도시철도 */
+  "부산1":"#F05A22","부산2":"#3A99CC",
+  "대구1":"#D93E4C","대구2":"#00AA75","대구3":"#EF7C1C",
+  "대전1":"#007DC5",
+  "광주1":"#59A400",
+};
+function subwayColor(line) { return SUBWAY_COLOR[line] || "#888"; }
+
+/* ── 계산기 지역 구분 자동 결정 ── */
+function getCalcRegion(item) {
+  if (item.region !== "서울") return "일반";
+  const c = item.city || "";
+  if (c.includes("강남구") || c.includes("서초구") || c.includes("용산구")) return "규제";
+  return "조정";
+}
+
+/* ── 청약 카드 → 자금 계산기 자동 연동 ── */
+function jumpToCalc(item) {
+  document.getElementById("calcPrice").value = item.avgPrice;
+  setContractRatio(item.contractRatio || 10);
+  setRegion(getCalcRegion(item));
+  calcFunds();
+  const sec = document.getElementById("calcSection");
+  sec.scrollIntoView({ behavior:"smooth", block:"start" });
+  sec.classList.remove("calc-linked");
+  void sec.offsetWidth; /* reflow to restart animation */
+  sec.classList.add("calc-linked");
+  setTimeout(() => sec.classList.remove("calc-linked"), 900);
+}
+
+/* ── 청약 상태 매핑 ── */
+function statusClass(s) {
+  return {
+    "접수예정":"status-upcoming","접수중":"status-open",
+    "당첨발표":"status-announce","계약중":"status-contract","완료":"status-done"
+  }[s]||"status-done";
+}
+function timelineDotClass(stepDate, status, today) {
+  if (!stepDate) return "pending";
+  const d = new Date(stepDate);
+  if (d < today) return "done";
+  if (status === "접수중" && stepDate) return "active";
+  return "pending";
+}
+
+/* ── 청약 KPI ── */
+function renderCheongakKPI(data) {
+  const total   = data.length;
+  const open    = data.filter(d=>d.status==="접수중").length;
+  const upcoming= data.filter(d=>d.status==="접수예정").length;
+  const ratios  = data.map(d=>d.avgPrice/d.marketPrice*100);
+  const avgRatio= (ratios.reduce((a,b)=>a+b,0)/ratios.length).toFixed(1);
+  document.getElementById("cqKpiTotal").textContent    = total+"개 단지";
+  document.getElementById("cqKpiTotalSub").textContent = "서울 "+data.filter(d=>d.region==="서울").length+"개 · 지방 "+data.filter(d=>d.region==="지방").length+"개";
+  document.getElementById("cqKpiOpen").textContent     = open+"개 · "+upcoming+"개";
+  document.getElementById("cqKpiOpenSub").textContent  = "접수중 "+open+"개 / 접수예정 "+upcoming+"개";
+  document.getElementById("cqKpiRatio").textContent    = avgRatio+"%";
+}
+
+/* ── 청약 카드 ── */
+let _cqFilter = "all";
+function filterCheongak(f) {
+  _cqFilter = f;
+  document.querySelectorAll(".cq-filter-btn").forEach(b=>{
+    b.classList.toggle("active", b.dataset.filter===f);
+  });
+  renderCheongakCards(CHEONGAK);
+}
+
+function renderCheongakCards(data) {
+  const today = new Date();
+  let filtered = data;
+  if (_cqFilter === "서울")    filtered = data.filter(d=>d.region==="서울");
+  else if (_cqFilter === "지방") filtered = data.filter(d=>d.region==="지방");
+  else if (_cqFilter !== "all") filtered = data.filter(d=>d.status===_cqFilter);
+
+  const grid = document.getElementById("cheongGrid");
+  grid.innerHTML = "";
+  filtered.forEach(d => {
+    const premium   = ((d.marketPrice / d.avgPrice - 1) * 100).toFixed(1);
+    const pClass    = +premium >= 10 ? "premium-pos" : +premium >= 0 ? "premium-eq" : "premium-neg";
+    const pLabel    = +premium >= 0 ? `▲ +${premium}%` : `▼ ${premium}%`;
+    const pDesc     = +premium >= 10 ? "시세차익 기대" : +premium >= 0 ? "시세 근접" : "시세 하회";
+
+    /* timeline steps */
+    const steps = [
+      { label:"접수시작", date:d.receiptStart },
+      { label:"접수종료", date:d.receiptEnd   },
+      { label:"당첨발표", date:d.winnerDate   },
+      { label:"계약시작", date:d.contractStart },
+    ];
+    const tlHTML = steps.map((s, i) => {
+      const dc = timelineDotClass(s.date, d.status, today);
+      const line = i < steps.length-1 ? `<div class="tl-line"></div>` : "";
+      const fmtD = s.date ? s.date.slice(5).replace("-","/") : "—";
+      return `<div class="tl-step">
+        <div class="tl-dot ${dc}"></div>
+        <div class="tl-lbl">${s.label}</div>
+        <div class="tl-date">${fmtD}</div>
+      </div>${line}`;
+    }).join("");
+
+    /* 지하철 배지 HTML */
+    const subwayHTML = (d.subway && d.subway.length > 0) ? `
+      <div class="cheong-subway">
+        <span class="cheong-subway-lbl">인근역</span>
+        ${d.subway.map(s => {
+          const lineNum = s.line;
+          const isNum = /^\d+$/.test(lineNum);
+          const cityMatch = lineNum.match(/^(부산|대구|대전|광주|인천)(\d+)$/);
+          const lineLabel = cityMatch ? `${cityMatch[1]} ${cityMatch[2]}호선`
+            : isNum ? `${lineNum}호선`
+            : lineNum === "경의" ? "경의중앙"
+            : lineNum === "수분" ? "수인분당"
+            : lineNum;
+          return `<span class="subway-badge" style="background:${subwayColor(lineNum)};">${lineLabel} ${s.name}</span>`;
+        }).join("")}
+      </div>` : (d.region === "지방" ? `
+      <div class="cheong-subway">
+        <span class="cheong-subway-lbl">인근역</span>
+        <span class="subway-badge" style="background:#e0e0e0;color:#888;">도시철도 없음</span>
+      </div>` : "");
+
+    /* 계산기 연동 스트립 */
+    const regionLabel = getCalcRegion(d) === "규제" ? "투기과열" : getCalcRegion(d) === "조정" ? "조정대상" : "일반지역";
+    const calcLinkHTML = `
+      <div class="cheong-calc-link" data-calc-link="1">
+        <div class="cheong-calc-info">
+          <span>자금 계산기로 연동</span>
+          <span class="cheong-calc-price">분양가 ${fmtShort(d.avgPrice)} · 계약금 ${d.contractRatio||10}% · ${regionLabel}</span>
+        </div>
+        <span class="cheong-calc-arrow">→</span>
+      </div>`;
+
+    const card = document.createElement("div");
+    card.className = "cheong-card";
+    card.innerHTML = `
+      <div class="card-accent" style="background:${d.color};"></div>
+      <div class="cheong-header">
+        <div class="cheong-title">
+          <div class="cheong-name">${d.name}</div>
+          <div class="cheong-loc">${d.city} · ${d.type} · ${d.units.toLocaleString()}세대 (${d.unitType})</div>
+        </div>
+        <div><span class="status-badge ${statusClass(d.status)}">${d.status}</span></div>
+      </div>
+      <div class="cheong-body">
+        <div class="price-compare-row">
+          <div class="pc-block">
+            <div class="pc-label">분양가 (84㎡ 추산)</div>
+            <div class="pc-val" style="color:${d.color};">${fmtShort(d.avgPrice)}</div>
+          </div>
+          <div class="pc-sep">→</div>
+          <div class="pc-block">
+            <div class="pc-label">인근 시세</div>
+            <div class="pc-val" style="color:#080808;">${fmtShort(d.marketPrice)}</div>
+          </div>
+          <div class="premium-badge ${pClass}" style="margin-left:auto;">${pLabel} · ${pDesc}</div>
+        </div>
+        <div class="cheong-meta">
+          <div class="cm-item"><div class="cm-lbl">입주 예정</div><div class="cm-val">${d.completion}</div></div>
+          <div class="cm-item"><div class="cm-lbl">예상 경쟁률</div><div class="cm-val">${d.competition}</div></div>
+          <div class="cm-item"><div class="cm-lbl">지역</div><div class="cm-val">${d.region}</div></div>
+        </div>
+      </div>
+      ${subwayHTML}
+      <div class="cheong-timeline">${tlHTML}</div>
+      ${calcLinkHTML}`;
+    card.querySelector("[data-calc-link]").addEventListener("click", () => jumpToCalc(d));
+    grid.appendChild(card);
+  });
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div style="padding:40px;text-align:center;color:#aaa;font-size:14px;grid-column:1/-1;">해당 조건의 청약 단지가 없습니다.</div>`;
+  }
+}
+
+/* ── 분양가 vs 시세 바 차트 ── */
+function renderPriceCompare(data) {
+  const sorted = data.slice().sort((a,b)=>b.avgPrice-a.avgPrice);
+  const maxVal = Math.max(...data.map(d=>d.marketPrice));
+  const el = document.getElementById("priceCompareChart");
+  el.innerHTML = "";
+  sorted.forEach(d => {
+    const premium = ((d.marketPrice/d.avgPrice-1)*100).toFixed(1);
+    const pClass  = +premium>=10?"premium-pos":+premium>=0?"premium-eq":"premium-neg";
+    const pFill   = Math.min((d.avgPrice/maxVal*100),100).toFixed(1);
+    const mFill   = Math.min((d.marketPrice/maxVal*100),100).toFixed(1);
+    const row = document.createElement("div");
+    row.className = "pb-row";
+    row.innerHTML = `
+      <div class="pb-name">
+        <div class="pb-name-main">${d.name}</div>
+        <div class="pb-name-sub">${d.city}</div>
+      </div>
+      <div class="pb-bars">
+        <div class="pb-bar-row">
+          <span class="pb-bar-lbl" style="color:${d.color};">분양</span>
+          <div class="pb-bar-track">
+            <div class="pb-bar-fill" style="width:${pFill}%;background:${d.color};"></div>
+          </div>
+          <span class="pb-bar-amt">${fmtShort(d.avgPrice)}</span>
+        </div>
+        <div class="pb-bar-row">
+          <span class="pb-bar-lbl" style="color:#aaa;">시세</span>
+          <div class="pb-bar-track">
+            <div class="pb-bar-fill" style="width:${mFill}%;background:#d8d8d8;"></div>
+          </div>
+          <span class="pb-bar-amt" style="color:#888;">${fmtShort(d.marketPrice)}</span>
+        </div>
+      </div>
+      <div class="pb-premium-col">
+        <span class="premium-badge ${pClass}" style="font-size:11px;">${+premium>=0?"+":""}${premium}%</span>
+      </div>`;
+    el.appendChild(row);
+  });
+}
+
+/* ── 청약 일정 테이블 ── */
+function renderCheongakSchedule(data) {
+  const sorted = data.slice().sort((a,b)=>new Date(a.receiptStart)-new Date(b.receiptStart));
+  const body   = document.getElementById("cqScheduleBody");
+  body.innerHTML = "";
+  sorted.forEach(d => {
+    const row = document.createElement("div");
+    row.style.cssText = "display:grid;grid-template-columns:1fr 100px 140px 140px 140px 100px;border-bottom:1px solid #f0f0f0;transition:background .1s;";
+    row.onmouseover = ()=>row.style.background="#fafafa";
+    row.onmouseout  = ()=>row.style.background="";
+    row.innerHTML = `
+      <div class="market-td" style="flex-direction:column;align-items:flex-start;gap:2px;">
+        <span style="font-size:14px;font-weight:800;color:${d.color};">${d.name}</span>
+        <span style="font-size:11px;color:#888;">${d.city} · ${d.units.toLocaleString()}세대</span>
+      </div>
+      <div class="market-td"><span class="status-badge ${statusClass(d.status)}">${d.status}</span></div>
+      <div class="market-td" style="font-size:12px;">${d.receiptStart}<br><span style="color:#aaa;">~ ${d.receiptEnd}</span></div>
+      <div class="market-td" style="font-size:12px;">${d.winnerDate}</div>
+      <div class="market-td" style="font-size:12px;">${d.contractStart}<br><span style="color:#aaa;">~ ${d.contractEnd}</span></div>
+      <div class="market-td" style="font-size:12px;font-weight:700;color:#080808;">${d.competition}</div>`;
+    body.appendChild(row);
+  });
+}
+
+/* ── 청약홈 Open API 조회 ── */
+async function fetchCheongakAPI() {
+  const key = document.getElementById("apiKeyInput").value.trim();
+  if (!key) { alert("서비스키를 입력해주세요.\ndata.go.kr에서 발급 가능합니다."); return; }
+
+  const dot  = document.getElementById("apiDot");
+  const txt  = document.getElementById("apiStatusText");
+  dot.className = "api-dot idle"; txt.textContent = "API 조회 중…";
+
+  try {
+    /* 청약홈 Open API — ApplyhomeInfoDetailSvc */
+    const url = `https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail`
+              + `?serviceKey=${encodeURIComponent(key)}&page=1&perPage=30&returnType=json`;
+    const res  = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+
+    if (!json.data || json.data.length === 0) {
+      dot.className = "api-dot err"; txt.textContent = "데이터 없음 (API는 정상 연결)";
+      return;
+    }
+
+    /* API 데이터 → 내부 포맷으로 변환 */
+    const converted = json.data.map((item, i) => ({
+      id: 1000 + i,
+      name: item.HOUSE_NM || "알 수 없음",
+      city: (item.SUBSCRPT_AREA_CODE_NM||"") + " " + (item.HSSPLY_ADRES||"").slice(0,6),
+      region: ["서울"].some(v=>(item.SUBSCRPT_AREA_CODE_NM||"").includes(v)) ? "서울" : "지방",
+      type: item.RENT_SECD_NM || "민영",
+      status: (() => {
+        const now = new Date();
+        const s = new Date(item.SUBSCRPT_RCPT_BGNDE||"9999-01-01");
+        const e = new Date(item.SUBSCRPT_RCPT_ENDDE||"9999-01-01");
+        const w = new Date(item.PRZWNER_PRESNATN_DE||"9999-01-01");
+        const c = new Date(item.CNTRCT_CNCLS_BGNDE||"9999-01-01");
+        if (now < s)                  return "접수예정";
+        if (now >= s && now <= e)     return "접수중";
+        if (now > e  && now < w)      return "당첨발표";
+        if (now >= c)                 return "계약중";
+        return "완료";
+      })(),
+      receiptStart: item.SUBSCRPT_RCPT_BGNDE||"",
+      receiptEnd:   item.SUBSCRPT_RCPT_ENDDE||"",
+      winnerDate:   item.PRZWNER_PRESNATN_DE||"",
+      contractStart:item.CNTRCT_CNCLS_BGNDE||"",
+      contractEnd:  item.CNTRCT_CNCLS_ENDDE||"",
+      units:        parseInt(item.TOT_SUPLY_HSHLDCO)||0,
+      unitType:     "59~84㎡",
+      avgPrice:     parseInt(item.LTTOT_TOP_DE)||50000,
+      marketPrice:  Math.round((parseInt(item.LTTOT_TOP_DE)||50000) * 1.15),
+      completion:   (item.MVN_PREARNGE_YM||"미정").slice(0,7),
+      competition:  "조회중",
+      color:        ["#6d3aff","#f53b7a","#1a6bff","#ff7a1a","#00b37e","#0aabb8"][i%6],
+    }));
+
+    renderCheongakKPI(converted);
+    renderCheongakCards(converted);
+    renderPriceCompare(converted.slice(0,10));
+    renderCheongakSchedule(converted);
+    dot.className = "api-dot live";
+    txt.textContent = `API 연동 성공 — ${converted.length}개 단지 실시간 데이터`;
+  } catch (err) {
+    dot.className = "api-dot err";
+    txt.textContent = `API 오류: ${err.message} — fallback 데이터 유지`;
+  }
+}
+
+function renderCheongak() {
+  renderCheongakKPI(CHEONGAK);
+  renderCheongakCards(CHEONGAK);
+  renderPriceCompare(CHEONGAK);
+  renderCheongakSchedule(CHEONGAK);
+}
+
+/* ═══════════════════════ 자금 계산기 ═══════════════════════ */
+let _contractRatio = 10;   // 계약금 비율 (%)
+let _isNoHouse     = true; // 무주택 여부
+let _region        = "규제"; // 지역 구분
+
+function setContractRatio(v) {
+  _contractRatio = v;
+  document.querySelectorAll("#contractRatioRow .calc-radio").forEach(b =>
+    b.classList.toggle("active", +b.dataset.val === v));
+  calcFunds();
+}
+function setOwner(v) {
+  _isNoHouse = (v === "no");
+  document.querySelectorAll("#houseOwnerRow .calc-radio").forEach(b =>
+    b.classList.toggle("active", b.dataset.val === v));
+  calcFunds();
+}
+function setRegion(v) {
+  _region = v;
+  document.querySelectorAll("#regionRow .calc-radio").forEach(b =>
+    b.classList.toggle("active", b.dataset.val === v));
+  calcFunds();
+}
+
+/* LTV 한도 — 무주택자 기준 (2026 기준 규정) */
+function getLTV(region, noHouse) {
+  /* [투기·투기과열] 무주택: 50%, 유주택: 40%
+     [조정대상]      무주택: 60%, 유주택: 50%
+     [일반]          무주택: 70%, 유주택: 60% */
+  const tbl = {
+    "규제": { true: 50, false: 40 },
+    "조정": { true: 60, false: 50 },
+    "일반": { true: 70, false: 60 },
+  };
+  return tbl[region]?.[noHouse] ?? 50;
+}
+
+/* DSR 한도 참고용 (1금융권 40%, 2금융권 50%) */
+const DSR_1ST = 40, DSR_2ND = 50;
+
+function fmtW(w) {
+  if (w <= 0) return "0만원";
+  if (w >= 10000) {
+    const e = Math.floor(w / 10000), m = Math.round(w % 10000);
+    return m ? `${e}억 ${m.toLocaleString()}만원` : `${e}억원`;
+  }
+  return `${Math.round(w).toLocaleString()}만원`;
+}
+
+function calcFunds() {
+  const price = parseFloat(document.getElementById("calcPrice").value) || 0;
+  const jungdoPct = Math.min(Math.max(parseFloat(document.getElementById("calcJungdo").value)||60, 0), 70);
+
+  if (price <= 0) {
+    document.getElementById("calcPriceHint").textContent = "";
+    return;
+  }
+
+  /* 분양가 표시 힌트 */
+  document.getElementById("calcPriceHint").textContent =
+    "= " + fmtW(price) + (price >= 10000 ? ` (${(price/10000).toFixed(2)}억)` : "");
+
+  /* ── 1. 기본 분배 ── */
+  const contract = Math.round(price * _contractRatio / 100);
+  const jungdo   = Math.round(price * jungdoPct / 100);
+  const balance  = price - contract - jungdo;
+  const contractPct = _contractRatio;
+  const balancePct  = 100 - contractPct - jungdoPct;
+
+  /* 게이지 */
+  document.getElementById("gaugeContract").style.width = contractPct + "%";
+  document.getElementById("gaugeContract").innerHTML   = `계약금<br>${contractPct}%`;
+  document.getElementById("gaugeJungdo").style.width   = jungdoPct + "%";
+  document.getElementById("gaugeJungdo").innerHTML     = `중도금<br>${jungdoPct}%`;
+  document.getElementById("gaugeBalance").style.width  = balancePct + "%";
+  document.getElementById("gaugeBalance").innerHTML    = `잔금<br>${balancePct.toFixed(0)}%`;
+
+  /* 결과 카드 */
+  document.getElementById("resContract").textContent    = fmtW(contract);
+  document.getElementById("resContractPct").textContent = `분양가의 ${contractPct}%`;
+  document.getElementById("resJungdo").textContent      = fmtW(jungdo);
+  document.getElementById("resJungdoPct").textContent   = `분양가의 ${jungdoPct}%`;
+  document.getElementById("resBalance").textContent     = fmtW(balance);
+  document.getElementById("resBalancePct").textContent  = `분양가의 ${balancePct.toFixed(0)}%`;
+
+  /* ── 2. LTV 대출 한도 계산 ── */
+  const ltv1 = getLTV(_region, _isNoHouse);
+  const ltv2 = Math.min(ltv1 + 10, 70); /* 2금융권은 +10% (상한 70%) */
+
+  const loanMax1 = Math.round(price * ltv1 / 100);  /* 1금융권 담보대출 최대 */
+  const loanMax2 = Math.round(price * ltv2 / 100);
+
+  /* 중도금 대출: 분양가의 jungdoPct% — 별도 집단대출 */
+  const jungdoLoan    = jungdo;
+  const jungdoOwn     = 0; /* 통상 100% 집단대출 */
+
+  /* 잔금: 담보대출 가능 금액 = min(LTV한도, balance) */
+  const mortgageMax1  = Math.min(loanMax1, balance);
+  const mortgageMax2  = Math.min(loanMax2, balance);
+  const balanceOwn1   = Math.max(balance - mortgageMax1, 0);
+  const balanceOwn2   = Math.max(balance - mortgageMax2, 0);
+
+  /* 행 렌더 */
+  function renderLoanRow(el, label, ltv, loanMax, mortgageMax, balanceOwn, highlight) {
+    el.innerHTML = `
+      <div style="${highlight?'font-weight:800;color:#6d3aff;':''}">${label}</div>
+      <div style="${highlight?'font-weight:800;color:#6d3aff;':''}">LTV ${ltv}%</div>
+      <div style="${highlight?'font-weight:800;color:#6d3aff;':''}">${fmtW(mortgageMax)}</div>
+      <div style="color:${balanceOwn>0?'#e53030':'#00875a'};font-weight:700;">${fmtW(balanceOwn)}</div>`;
+  }
+  renderLoanRow(document.getElementById("loanRow1"), "1금융권(은행)", ltv1, loanMax1, mortgageMax1, balanceOwn1, true);
+  renderLoanRow(document.getElementById("loanRow2"), "2금융권(보험 등)", ltv2, loanMax2, mortgageMax2, balanceOwn2, false);
+
+  /* 지역·자격 노트 */
+  const noteMap = {
+    "규제": "투기·투기과열지구: 15억 초과 아파트는 주담대 원칙 불가. DSR 40%(1금융권) 별도 적용.",
+    "조정": "조정대상지역: DSR 40% 적용. 생애최초 구입 시 LTV 80% 특례 별도 확인 필요.",
+    "일반": "일반지역: DSR 40% 적용. 지역·소득에 따라 한도 상이. 정책모기지(디딤돌 등) 병행 검토.",
+  };
+  document.getElementById("loanNote").textContent =
+    (noteMap[_region]||"") + (_isNoHouse ? " 무주택자 우대 적용." : " 유주택자 기준.");
+
+  /* ── 3. 실필요 현금 요약 ── */
+  const totalCash1 = contract + jungdoOwn + balanceOwn1;
+
+  document.getElementById("cashContract").textContent    = fmtW(contract);
+  document.getElementById("cashJungdoOwn").textContent   = jungdoOwn > 0 ? fmtW(jungdoOwn) : "0 (집단대출 전액)";
+  document.getElementById("cashBalanceOwn").textContent  = fmtW(balanceOwn1);
+  document.getElementById("cashTotal").textContent       = fmtW(totalCash1);
+  document.getElementById("cashJungdoLoan").textContent  = fmtW(jungdoLoan) + " (입주 시 주담대로 전환)";
+  document.getElementById("cashMortgage").textContent    = fmtW(mortgageMax1);
+}
+
+/* ═══════════════════════ INIT ═══════════════════════ */
+renderDynamic();
+renderSeoul();
+renderCheongak();
+loadData();
+if (IS_SERVER) setRefreshUI("live", "데이터 새로고침");
+</script>
+</body>
+</html>
