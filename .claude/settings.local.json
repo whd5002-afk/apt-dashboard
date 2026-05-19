@@ -14,7 +14,9 @@
       "PowerShell($proc = Start-Process python -ArgumentList \"-m\",\"http.server\",\"8765\" -WorkingDirectory \"C:\\\\Users\\\\JW\\\\부동산분석\" -PassThru -WindowStyle Hidden; Start-Sleep 2; \\(Invoke-WebRequest \"http://localhost:8765/apt_dashboard.html\" -UseBasicParsing -TimeoutSec 5\\).StatusCode; \"PID=$\\($proc.Id\\)\")",
       "PowerShell(Test-Path *)",
       "PowerShell(winget install *)",
-      "PowerShell(git *)"
+      "PowerShell(git *)",
+      "PowerShell($env:PATH += \";C:\\\\Program Files\\\\Git\\\\cmd\"; cd \"C:\\\\Users\\\\JW\\\\부동산분석\"; git log --oneline)",
+      "PowerShell(New-Item *)"
     ]
   }
 }

@@ -12,7 +12,7 @@ import csv
 import io
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -46,9 +46,17 @@ HEADERS_POST = {
     "Upgrade-Insecure-Requests": "1",
 }
 
-# 조회 기간 (최근 6개월 - 신고 완료된 데이터)
-FROM_DT = "2025-10-01"
-TO_DT   = "2026-03-31"
+# 조회 기간: 전월 말일 기준 최근 6개월 (실행 시점에 자동 계산)
+def _compute_date_range():
+    today = datetime.now()
+    to  = today.replace(day=1) - timedelta(days=1)   # 전월 말일
+    m, y = to.month - 5, to.year
+    if m <= 0:
+        m, y = m + 12, y - 1
+    frm = to.replace(year=y, month=m, day=1)
+    return frm.strftime("%Y-%m-%d"), to.strftime("%Y-%m-%d")
+
+FROM_DT, TO_DT = _compute_date_range()
 
 # 6개 도시 설정: (sido코드, 필터 키워드 or None)
 # 창원은 경남(48)을 받아 '창원시'로 필터
@@ -168,6 +176,23 @@ def calc_stats(amounts):
             "min": min(amounts), "max": max(amounts)}
 
 
+def save_data_json(results, meta, filepath):
+    """GitHub Pages용 경량 JSON (transactions 제외, HTML이 기대하는 영문 키)"""
+    summary = {
+        city: {
+            "count":  s["count"],
+            "avg":    round(s["avg"], 1),
+            "median": round(s["median"], 1),
+            "min":    int(s["min"]),
+            "max":    int(s["max"]),
+        }
+        for city, s in results.items()
+    }
+    with open(filepath, "w", encoding="utf-8") as f:
+        json.dump({"meta": meta, "summary": summary}, f, ensure_ascii=False, indent=2)
+    print(f"  data.json 저장 완료: {filepath}")
+
+
 def save_json(results, all_records, filepath):
     """분석 결과와 전체 실거래 레코드를 JSON으로 저장"""
     output = {
@@ -269,7 +294,16 @@ def main():
     print("  * 계약일 기준 데이터 / 해제 거래 포함될 수 있음")
 
     # JSON 저장
+    meta = {
+        "source":        "국토교통부 실거래가 공개시스템",
+        "url":           "https://rt.molit.go.kr",
+        "period_from":   FROM_DT,
+        "period_to":     TO_DT,
+        "downloaded_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+        "unit":          "만원",
+    }
     save_json(results, all_records, "apt_transactions.json")
+    save_data_json(results, meta, "data.json")
 
 
 if __name__ == "__main__":

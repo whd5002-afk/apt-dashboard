@@ -342,7 +342,7 @@
   <h1>6개 도시<br>아파트 종합 분석</h1>
   <p>국토교통부 실거래가 공개시스템 직접 다운로드 데이터 기반<br>
      실거래가 · 인프라 스코어 · 시장 전망 · 종합 매수 판단을 제공합니다.</p>
-  <div class="period-badge">기준 기간: 2025년 10월 ~ 2026년 3월 (계약일 기준, 해제 거래 제외)</div>
+  <div class="period-badge" id="periodBadge">기준 기간: 2025년 10월 ~ 2026년 3월 (계약일 기준, 해제 거래 제외)</div>
 </section>
 
 <div class="kpi-bar">
@@ -1225,8 +1225,15 @@ document.querySelectorAll(".seoul-table th[data-col]").forEach(th => {
 document.getElementById("footerDate").textContent =
   "생성: " + new Date().toLocaleDateString("ko-KR", { year:"numeric", month:"long", day:"numeric" });
 
-const IS_SERVER = location.protocol !== "file:";
-let _pollTimer  = null;
+const IS_SERVER  = location.protocol !== "file:";
+const IS_LOCAL   = ["localhost","127.0.0.1"].includes(location.hostname);
+const DATA_URL   = IS_LOCAL ? "/api/data" : "data.json";
+let _pollTimer   = null;
+
+/* GitHub Pages에서는 새로고침 버튼 숨김 (서버 없음) */
+if (IS_SERVER && !IS_LOCAL) {
+  document.getElementById("refreshBtn").style.display = "none";
+}
 
 function setRefreshUI(status, label) {
   document.getElementById("refreshDot").className   = "refresh-dot " + status;
@@ -1239,6 +1246,13 @@ function updateDataBadge(meta) {
   document.getElementById("dataBadge").textContent =
     "기준: " + d.toLocaleDateString("ko-KR",{month:"long",day:"numeric"}) +
     " " + d.toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"});
+  if (meta.period_from && meta.period_to) {
+    const [fy,fm] = meta.period_from.split("-");
+    const [ty,tm] = meta.period_to.split("-");
+    const pb = document.getElementById("periodBadge");
+    if (pb) pb.textContent =
+      `기준 기간: ${fy}년 ${+fm}월 ~ ${ty}년 ${+tm}월 (계약일 기준, 해제 거래 제외)`;
+  }
 }
 
 async function loadData() {
@@ -1249,7 +1263,7 @@ async function loadData() {
     return;
   }
   try {
-    const res = await fetch("/api/data");
+    const res = await fetch(DATA_URL);
     if (!res.ok) {
       setRefreshUI("error", `서버 오류 ${res.status}`);
       return;
