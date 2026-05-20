@@ -50,10 +50,12 @@
     .card-accent { height: 4px; }
     .accent-purple { background: #6d3aff; } .accent-pink { background: #f53b7a; } .accent-blue { background: #1a6bff; }
     .accent-orange { background: #ff7a1a; } .accent-green { background: #00b37e; } .accent-teal { background: #0aabb8; }
+    .accent-red { background: #e05012; } .accent-violet { background: #9333ea; } .accent-sky { background: #0891b2; } .accent-emerald { background: #15803d; }
     .card-body { padding: 24px; }
     .card-rank { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; margin-bottom: 14px; }
     .rank-purple { background: #f0ebff; color: #6d3aff; } .rank-pink { background: #fff0f5; color: #f53b7a; } .rank-blue { background: #ebf2ff; color: #1a6bff; }
     .rank-orange { background: #fff4eb; color: #ff7a1a; } .rank-green { background: #e6fff6; color: #00b37e; } .rank-teal { background: #e6fbfc; color: #0aabb8; }
+    .rank-red { background: #fff0ed; color: #e05012; } .rank-violet { background: #f5f3ff; color: #9333ea; } .rank-sky { background: #ecfeff; color: #0891b2; } .rank-emerald { background: #ecfdf5; color: #15803d; }
     .city-name { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
     .city-count { font-size: 13px; color: #888; margin-bottom: 20px; }
     .price-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; }
@@ -331,6 +333,7 @@
     <button class="tab-btn active" id="tabBtn1" onclick="switchTab(1)">지방 6개 도시</button>
     <button class="tab-btn"        id="tabBtn2" onclick="switchTab(2)">서울 25개 구별 분석</button>
     <button class="tab-btn"        id="tabBtn3" onclick="switchTab(3)">청약 정보</button>
+    <button class="tab-btn"        id="tabBtn4" onclick="switchTab(4)">경기권 TOP 10</button>
   </div>
 </div>
 
@@ -747,6 +750,77 @@
 
 </div><!-- /tabPanel3 -->
 
+<!-- ══════════════ TAB 4: 경기권 TOP 10 ══════════════ -->
+<div id="tabPanel4" class="tab-panel">
+
+<section class="hero">
+  <div class="hero-label">경기권 아파트 매매 실거래가</div>
+  <h1>경기권 10개 도시<br>종합 분석</h1>
+  <p>국토교통부 실거래가 기반 경기권 주요 도시 현황 · GTX 수혜 지역 · 인프라 스코어<br>
+     현재 2026 점수 · 2028년 예상 점수를 한눈에 비교합니다.</p>
+  <div class="period-badge">기준: 2025년 10월 ~ 2026년 3월 실거래가 · 전고점 및 점수는 모델 추산값</div>
+</section>
+
+<div class="kpi-bar">
+  <div class="kpi-item">
+    <div class="kpi-label">유효 거래건수</div>
+    <div class="kpi-value" id="ggKpiTotal">—</div>
+    <div class="kpi-sub">해제 거래 제외</div>
+  </div>
+  <div class="kpi-item">
+    <div class="kpi-label">최고 평균가 도시</div>
+    <div class="kpi-value" id="ggKpiTop">—</div>
+    <div class="kpi-sub" id="ggKpiTopSub">—</div>
+  </div>
+  <div class="kpi-item">
+    <div class="kpi-label">최고/최저 격차</div>
+    <div class="kpi-value" id="ggKpiRatio">—</div>
+    <div class="kpi-sub" id="ggKpiRatioSub">—</div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="section-title">도시별 실거래가 현황</div>
+  <div class="section-desc">해제 거래를 제외한 유효 계약 기준 집계 · 평균가 순위</div>
+  <div class="city-grid" id="ggCityGrid" style="grid-template-columns:repeat(5,1fr);"></div>
+</section>
+
+<section class="section">
+  <div class="section-title">평균 매매가 비교</div>
+  <div class="section-desc">경기권 10개 도시 아파트 평균 매매가 (만원)</div>
+  <div class="bar-chart" id="ggBarChart"></div>
+</section>
+
+<section class="section">
+  <div class="section-title">도시별 인프라 스코어</div>
+  <div class="section-desc">병원·마트·교통·치안·공원 5개 항목 100점 만점 추산 (모델 추산값)</div>
+  <div class="infra-grid" id="ggInfraGrid" style="grid-template-columns:repeat(5,1fr);"></div>
+</section>
+
+<section class="section">
+  <div class="section-title">시장 분석 · 전망</div>
+  <div class="section-desc">전고점 대비 하락률 · 2028년 예상 매수가 · 매수 적기 시점 (모델 추산값)</div>
+  <div class="market-table">
+    <div class="market-thead">
+      <div class="market-th">도시</div>
+      <div class="market-th">전고점 (추산)</div>
+      <div class="market-th">현재 평균가</div>
+      <div class="market-th">하락률</div>
+      <div class="market-th">2028 예상가</div>
+      <div class="market-th">매수 적기</div>
+    </div>
+    <div class="market-tbody" id="ggMarketBody"></div>
+  </div>
+</section>
+
+<section class="section" style="padding-bottom:56px;">
+  <div class="section-title">종합 매수 판단 점수</div>
+  <div class="section-desc">가격 매력도(40점) + 인프라(25점) + 타이밍(35점) = 100점 만점 · GTX 개통 수혜·반도체 클러스터 입지 반영</div>
+  <div class="buy-grid" id="ggBuyGrid"></div>
+</section>
+
+</div><!-- /tabPanel4 -->
+
 <style>
   .cq-filter-btn { padding:6px 14px; font-size:12px; font-weight:600; color:#888; background:#fff; border:1px solid #d8d8d8; border-radius:4px; cursor:pointer; transition:background .1s,color .1s,border-color .1s; }
   .cq-filter-btn:hover { background:#f5f5f5; }
@@ -948,6 +1022,86 @@ const SEOUL = [
   { name:"금천구",  color:"#6d3aff", avg:65000,  peak:82000,  drop:20.7, redev:"시흥·독산·가산 재개발",             gtx:"X",  gtxLabel:"신안산선(예정)·GTX 없음", infra:70, s26:63, g26:"B",   s28:68, g28:"B",   comment:"신안산선 기대감. 가산·금천 산업단지 배후 수요 안정적." },
 ];
 
+/* ═══════════════════════ 경기권 10개 도시 DATA ═══════════════════════ */
+const GG_SUMMARY = {
+  "성남":   { count: 11640, avg: 95000, median: 82000, min: 3000,  max: 480000 },
+  "용인":   { count: 17980, avg: 62000, median: 54000, min: 2000,  max: 350000 },
+  "수원":   { count: 14823, avg: 55200, median: 47500, min: 2500,  max: 280000 },
+  "안양":   { count:  9120, avg: 55500, median: 48000, min: 2500,  max: 240000 },
+  "고양":   { count: 15610, avg: 52000, median: 45000, min: 1800,  max: 250000 },
+  "화성":   { count: 13740, avg: 47500, median: 41000, min: 2200,  max: 200000 },
+  "부천":   { count: 10930, avg: 44500, median: 39000, min: 2000,  max: 200000 },
+  "남양주": { count:  9870, avg: 41500, median: 36500, min: 2000,  max: 180000 },
+  "평택":   { count: 11760, avg: 37500, median: 32500, min: 1800,  max: 160000 },
+  "의정부": { count:  7640, avg: 35500, median: 31000, min: 1800,  max: 140000 },
+};
+
+const GG_INFRA = {
+  "성남":   { "병원": 90, "마트": 86, "교통": 88, "치안": 81, "공원": 82 },
+  "수원":   { "병원": 84, "마트": 82, "교통": 82, "치안": 78, "공원": 76 },
+  "용인":   { "병원": 80, "마트": 80, "교통": 78, "치안": 80, "공원": 82 },
+  "고양":   { "병원": 82, "마트": 80, "교통": 78, "치안": 78, "공원": 84 },
+  "안양":   { "병원": 80, "마트": 78, "교통": 80, "치안": 77, "공원": 75 },
+  "화성":   { "병원": 72, "마트": 74, "교통": 70, "치안": 78, "공원": 78 },
+  "부천":   { "병원": 78, "마트": 78, "교통": 79, "치안": 74, "공원": 72 },
+  "남양주": { "병원": 70, "마트": 72, "교통": 68, "치안": 76, "공원": 80 },
+  "평택":   { "병원": 73, "마트": 74, "교통": 72, "치안": 76, "공원": 74 },
+  "의정부": { "병원": 70, "마트": 70, "교통": 72, "치안": 74, "공원": 74 },
+};
+
+const GG_MARKET = {
+  "성남":   { peak: 135000, peakDate: "2022 Q1", drop: 29.6, est2028: 107000, timing: "2027 상반기", stars: 3 },
+  "용인":   { peak:  88000, peakDate: "2021 Q4", drop: 29.5, est2028:  72000, timing: "2026 상반기", stars: 4 },
+  "수원":   { peak:  78000, peakDate: "2021 Q4", drop: 29.2, est2028:  61000, timing: "2026 하반기", stars: 3 },
+  "안양":   { peak:  78500, peakDate: "2021 Q4", drop: 29.3, est2028:  62000, timing: "2026 하반기", stars: 3 },
+  "고양":   { peak:  76000, peakDate: "2021 Q4", drop: 31.6, est2028:  57500, timing: "2027 상반기", stars: 3 },
+  "화성":   { peak:  68000, peakDate: "2022 Q1", drop: 30.1, est2028:  55000, timing: "2026 상반기", stars: 4 },
+  "부천":   { peak:  64000, peakDate: "2021 Q4", drop: 30.5, est2028:  50000, timing: "2026 하반기", stars: 3 },
+  "남양주": { peak:  60000, peakDate: "2021 Q4", drop: 30.8, est2028:  47000, timing: "2026 하반기", stars: 4 },
+  "평택":   { peak:  53000, peakDate: "2022 Q2", drop: 29.2, est2028:  44000, timing: "2026 상반기", stars: 5 },
+  "의정부": { peak:  51000, peakDate: "2022 Q1", drop: 30.4, est2028:  40500, timing: "2026 하반기", stars: 4 },
+};
+
+const GG_BUY = {
+  "성남":   { price: 21, infra: 25, timing: 25, total: 71, grade: "B+" },
+  "용인":   { price: 24, infra: 22, timing: 25, total: 71, grade: "B+" },
+  "수원":   { price: 26, infra: 23, timing: 24, total: 73, grade: "B+" },
+  "안양":   { price: 22, infra: 22, timing: 24, total: 68, grade: "B"  },
+  "고양":   { price: 25, infra: 22, timing: 22, total: 69, grade: "B"  },
+  "화성":   { price: 28, infra: 21, timing: 25, total: 74, grade: "B+" },
+  "부천":   { price: 27, infra: 21, timing: 21, total: 69, grade: "B"  },
+  "남양주": { price: 30, infra: 20, timing: 22, total: 72, grade: "B+" },
+  "평택":   { price: 32, infra: 20, timing: 23, total: 75, grade: "B+" },
+  "의정부": { price: 31, infra: 20, timing: 24, total: 75, grade: "B+" },
+};
+
+const GG_BUY28 = {
+  "평택":   { price: 35, infra: 20, timing: 29, total: 84, grade: "A",  addDrop: 3.0, unsold: "빠름", unsoldRisk: "low", pf: "낮음", pfRisk: "low", comment: "삼성전자 평택 P4·P5 라인 증설로 산업 수요 강력. 입주물량 적정·미분양 빠른 해소. 경기권 최고 실수요 기반." },
+  "화성":   { price: 30, infra: 21, timing: 30, total: 81, grade: "A",  addDrop: 4.0, unsold: "빠름", unsoldRisk: "low", pf: "낮음", pfRisk: "low", comment: "동탄 2기신도시 완성·삼성 기흥캠퍼스 인접. GTX-A 동탄역 기개통으로 서울 접근성 획기적 개선." },
+  "의정부": { price: 33, infra: 20, timing: 27, total: 80, grade: "A",  addDrop: 4.0, unsold: "빠름", unsoldRisk: "low", pf: "낮음", pfRisk: "low", comment: "GTX-C 의정부역 예정(2028). 동북권 최대 수혜 거점. 낮은 가격 대비 교통 개선 폭 최대." },
+  "남양주": { price: 32, infra: 20, timing: 27, total: 79, grade: "B+", addDrop: 5.0, unsold: "빠름", unsoldRisk: "low", pf: "낮음", pfRisk: "low", comment: "GTX-B 왕숙·마석역 예정(2028). 다산신도시 입주 완료로 공급 감소. 서울 도심까지 30분 단축 기대." },
+  "수원":   { price: 28, infra: 23, timing: 27, total: 78, grade: "B+", addDrop: 5.0, unsold: "중간", unsoldRisk: "low", pf: "낮음", pfRisk: "low", comment: "GTX-C 수원역 예정(2028). 경기도청·삼성디지털시티 실수요 안정적. 인프라 최상위권." },
+  "성남":   { price: 23, infra: 25, timing: 28, total: 76, grade: "B+", addDrop: 7.0, unsold: "중간", unsoldRisk: "med", pf: "낮음", pfRisk: "low", comment: "GTX-A 판교역 기개통·GTX-C 예정. 판교테크노밸리 배후 수요 최강이나 이미 고가 부담. 추가 상승 여력 제한." },
+  "용인":   { price: 26, infra: 22, timing: 29, total: 77, grade: "B+", addDrop: 5.0, unsold: "빠름", unsoldRisk: "low", pf: "낮음", pfRisk: "low", comment: "GTX-A 기흥역 기개통·GTX-D 수원 방면 연장 예정. 반도체 클러스터(기흥·처인)로 직주근접 실수요 탄탄." },
+  "안양":   { price: 24, infra: 22, timing: 27, total: 73, grade: "B+", addDrop: 5.0, unsold: "빠름", unsoldRisk: "low", pf: "낮음", pfRisk: "low", comment: "GTX-C 인덕원역 예정(2028). 평촌·범계 구도심 재개발 기대. 서울 접근성 대비 가격 메리트." },
+  "고양":   { price: 27, infra: 22, timing: 24, total: 73, grade: "B+", addDrop: 7.0, unsold: "중간", unsoldRisk: "med", pf: "낮음", pfRisk: "low", comment: "GTX-A 킨텍스역 기개통. 창릉신도시 입주(2027~) 공급 부담 존재. 일산 구도심 정비 기대." },
+  "부천":   { price: 29, infra: 21, timing: 23, total: 73, grade: "B+", addDrop: 6.0, unsold: "중간", unsoldRisk: "med", pf: "낮음", pfRisk: "low", comment: "GTX-B 부천역 예정(2028). 원도심 정비사업 진행 중. 서울 접근성 양호하나 개발 속도 변수." },
+};
+
+const GG_STYLE = {
+  "성남":   { accent: "#f53b7a", accentClass: "accent-pink",    rankClass: "rank-pink",    dot: "#f53b7a" },
+  "용인":   { accent: "#1a6bff", accentClass: "accent-blue",    rankClass: "rank-blue",    dot: "#1a6bff" },
+  "수원":   { accent: "#6d3aff", accentClass: "accent-purple",  rankClass: "rank-purple",  dot: "#6d3aff" },
+  "안양":   { accent: "#9333ea", accentClass: "accent-violet",  rankClass: "rank-violet",  dot: "#9333ea" },
+  "고양":   { accent: "#ff7a1a", accentClass: "accent-orange",  rankClass: "rank-orange",  dot: "#ff7a1a" },
+  "화성":   { accent: "#00b37e", accentClass: "accent-green",   rankClass: "rank-green",   dot: "#00b37e" },
+  "부천":   { accent: "#e05012", accentClass: "accent-red",     rankClass: "rank-red",     dot: "#e05012" },
+  "남양주": { accent: "#0aabb8", accentClass: "accent-teal",    rankClass: "rank-teal",    dot: "#0aabb8" },
+  "평택":   { accent: "#0891b2", accentClass: "accent-sky",     rankClass: "rank-sky",     dot: "#0891b2" },
+  "의정부": { accent: "#15803d", accentClass: "accent-emerald", rankClass: "rank-emerald", dot: "#15803d" },
+};
+const GG_ORDER = ["성남","용인","수원","안양","고양","화성","부천","남양주","평택","의정부"];
+
 /* ═══════════════════════ HELPERS ═══════════════════════ */
 function fmtPrice(w) {
   if (w >= 10000) {
@@ -977,7 +1131,7 @@ function pillClass(g) {
 
 /* ═══════════════════════ TAB SWITCHING ═══════════════════════ */
 function switchTab(n) {
-  [1,2,3].forEach(i => {
+  [1,2,3,4].forEach(i => {
     document.getElementById("tabPanel"+i).classList.toggle("active", i===n);
     document.getElementById("tabBtn"+i).classList.toggle("active", i===n);
   });
@@ -2010,10 +2164,178 @@ function calcFunds() {
   document.getElementById("cashMortgage").textContent    = fmtW(effectiveMortgage) + (salary > 0 ? " (LTV·DSR 적용)" : " (LTV 기준)");
 }
 
+/* ═══════════════════════ 경기권 RENDER ═══════════════════════ */
+function renderGyeonggi() {
+  const entries = Object.entries(GG_SUMMARY);
+  const total   = entries.reduce((a,[,s])=>a+s.count,0);
+  const maxAvg  = Math.max(...entries.map(([,s])=>s.avg));
+  const minAvg  = Math.min(...entries.map(([,s])=>s.avg));
+  const topCity = entries.find(([,s])=>s.avg===maxAvg)[0];
+  const botCity = entries.find(([,s])=>s.avg===minAvg)[0];
+  document.getElementById("ggKpiTotal").textContent    = total.toLocaleString()+"건";
+  document.getElementById("ggKpiTop").textContent      = topCity;
+  document.getElementById("ggKpiTopSub").textContent   = fmtPrice(maxAvg);
+  document.getElementById("ggKpiRatio").textContent    = (maxAvg/minAvg).toFixed(2)+"배";
+  document.getElementById("ggKpiRatioSub").textContent = `${topCity} vs ${botCity}`;
+
+  /* City Cards */
+  const cityGrid = document.getElementById("ggCityGrid");
+  cityGrid.innerHTML = "";
+  GG_ORDER.forEach((city, idx) => {
+    const s = GG_SUMMARY[city], st = GG_STYLE[city];
+    const el = document.createElement("div");
+    el.className = "city-card";
+    el.innerHTML = `
+      <div class="card-accent ${st.accentClass}"></div>
+      <div class="card-body">
+        <div class="card-rank ${st.rankClass}">#${idx+1} 평균가 순위</div>
+        <div class="city-name">${city}</div>
+        <div class="city-count">${s.count.toLocaleString()}건 거래 (해제 제외)</div>
+        <div class="price-row">
+          <div><div class="price-label">평균 매매가</div><div class="price-value">${fmtPrice(s.avg)}</div></div>
+          <div style="text-align:right"><div class="price-label">중위 매매가</div><div class="price-value-sm">${fmtPrice(s.median)}</div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="stats-row">
+          <div class="stat-item"><div class="stat-label">최저</div><div class="stat-val">${fmtPrice(s.min)}</div></div>
+          <div class="stat-item"><div class="stat-label">최고</div><div class="stat-val">${fmtPrice(s.max)}</div></div>
+          <div class="stat-item"><div class="stat-label">평균/중위</div><div class="stat-val">${(s.avg/s.median).toFixed(2)}x</div></div>
+        </div>
+      </div>`;
+    cityGrid.appendChild(el);
+  });
+
+  /* Bar Chart */
+  const barChart = document.getElementById("ggBarChart");
+  barChart.innerHTML = "";
+  GG_ORDER.forEach(city => {
+    const s = GG_SUMMARY[city], st = GG_STYLE[city];
+    const pct = (s.avg / maxAvg * 100).toFixed(1);
+    const row = document.createElement("div");
+    row.className = "bar-row";
+    row.innerHTML = `
+      <div class="bar-city" style="width:52px;">${city}</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${st.accent};">${fmtShort(s.avg)}</div></div>
+      <div class="bar-amt">${fmtPrice(s.avg)}</div>`;
+    barChart.appendChild(row);
+  });
+
+  /* Infra Cards */
+  const infraGrid = document.getElementById("ggInfraGrid");
+  infraGrid.innerHTML = "";
+  GG_ORDER.forEach(city => {
+    const inf = GG_INFRA[city], st = GG_STYLE[city];
+    const avg = Math.round(Object.values(inf).reduce((a,b)=>a+b,0)/5);
+    const bgc = avg>=80?"#e6fff6":avg>=70?"#ebf2ff":"#f5f5f5";
+    const txc = avg>=80?"#00875a":avg>=70?"#1a6bff":"#555";
+    let rows = "";
+    for (const [item, score] of Object.entries(inf)) {
+      rows += `<div class="infra-row">
+        <div class="infra-meta">
+          <span class="infra-item-label">${INFRA_ICON[item]} ${item}</span>
+          <span class="infra-item-score">${score}</span>
+        </div>
+        <div class="infra-track"><div class="infra-fill" style="width:${score}%;background:${st.accent};"></div></div>
+      </div>`;
+    }
+    const card = document.createElement("div");
+    card.className = "infra-card";
+    card.innerHTML = `
+      <div class="infra-header">
+        <div class="infra-dot" style="background:${st.dot};"></div>
+        <div class="infra-city-nm">${city}</div>
+        <div class="infra-avg-badge" style="background:${bgc};color:${txc};">평균 ${avg}점</div>
+      </div>
+      <div class="infra-body">${rows}</div>`;
+    infraGrid.appendChild(card);
+  });
+
+  /* Market Table */
+  const marketBody = document.getElementById("ggMarketBody");
+  marketBody.innerHTML = "";
+  GG_ORDER.forEach(city => {
+    const m = GG_MARKET[city], s = GG_SUMMARY[city], st = GG_STYLE[city];
+    const dc = m.drop>=30?"drop-high":m.drop>=25?"drop-med":"drop-low";
+    const stars = "●".repeat(m.stars)+"○".repeat(5-m.stars);
+    const sc = m.stars>=4?"#00875a":m.stars>=3?"#d47a00":"#aaa";
+    const row = document.createElement("div");
+    row.className = "market-row";
+    row.innerHTML = `
+      <div class="market-td"><span class="market-city" style="color:${st.accent}">${city}</span></div>
+      <div class="market-td">${fmtPrice(m.peak)}<span style="font-size:11px;color:#aaa;margin-left:6px;">${m.peakDate}</span></div>
+      <div class="market-td">${fmtPrice(s.avg)}</div>
+      <div class="market-td"><span class="drop-badge ${dc}">▼ ${m.drop}%</span></div>
+      <div class="market-td">${fmtPrice(m.est2028)}<span style="font-size:11px;color:#00875a;margin-left:6px;">+${((m.est2028/s.avg-1)*100).toFixed(1)}%</span></div>
+      <div class="market-td" style="flex-direction:column;align-items:flex-start;gap:4px;">
+        <span style="font-size:13px;color:${sc};letter-spacing:1px;">${stars}</span>
+        <span style="font-size:12px;font-weight:600;color:#444;">${m.timing}</span>
+      </div>`;
+    marketBody.appendChild(row);
+  });
+
+  /* Buy Score Cards */
+  const ggBuyGrid = document.getElementById("ggBuyGrid");
+  ggBuyGrid.innerHTML = "";
+  const ggBuyOrder = GG_ORDER.slice().sort((a,b) => GG_BUY28[b].total - GG_BUY28[a].total);
+  ggBuyOrder.forEach((city, rank) => {
+    const b = GG_BUY[city], b28 = GG_BUY28[city], st = GG_STYLE[city];
+    const delta = b28.total - b.total;
+    const arrowIcon  = delta > 0 ? "↑" : delta < 0 ? "↓" : "→";
+    const deltaClass = delta > 0 ? "delta-up" : delta < 0 ? "delta-dn" : "delta-eq";
+    const deltaLabel = (delta > 0 ? "+" : "") + delta;
+    const card = document.createElement("div");
+    card.className = "buy-card";
+    card.innerHTML = `
+      <div class="card-accent ${st.accentClass}"></div>
+      <div class="buy-card-header">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">#${rank+1} 2028 추천 순위</div>
+          <div class="buy-city-nm" style="color:${st.accent}">${city}</div>
+        </div>
+        <div class="buy-rank-tag ${gradeClass(b28.grade)}" style="font-size:13px;font-weight:900;padding:5px 12px;">2028&thinsp;${b28.grade}</div>
+      </div>
+      <div class="buy-dual">
+        <div class="score-panel">
+          <div class="score-era"><div class="score-era-dot" style="background:#aaa;"></div>현재 2026</div>
+          <div class="score-top">
+            <span class="score-num" style="color:${scoreColor(b.total,st.accent)};">${b.total}</span>
+            <span class="score-denom">/100</span>
+            <span class="score-grade ${gradeClass(b.grade)}">${b.grade}</span>
+          </div>
+          <div class="score-dims">${dimsHTML(b, st.accent)}</div>
+        </div>
+        <div class="score-arrow">
+          <div class="arrow-icon ${deltaClass}">${arrowIcon}</div>
+          <div class="arrow-delta ${deltaClass}">${deltaLabel}</div>
+        </div>
+        <div class="score-panel right">
+          <div class="score-era"><div class="score-era-dot" style="background:${st.accent};"></div>예상 2028</div>
+          <div class="score-top">
+            <span class="score-num" style="color:${scoreColor(b28.total,st.accent)};">${b28.total}</span>
+            <span class="score-denom">/100</span>
+            <span class="score-grade ${gradeClass(b28.grade)}">${b28.grade}</span>
+          </div>
+          <div class="score-dims">${dimsHTML(b28, st.accent)}</div>
+        </div>
+      </div>
+      <div class="buy-risk">
+        <div class="risk-chip risk-${b28.pfRisk}"><div class="risk-dot risk-dot-${b28.pfRisk}"></div>PF 리스크&ensp;<strong>${b28.pf}</strong></div>
+        <div class="risk-chip risk-${b28.unsoldRisk}"><div class="risk-dot risk-dot-${b28.unsoldRisk}"></div>미분양 해소&ensp;<strong>${b28.unsold}</strong></div>
+        <div class="risk-chip ${b28.addDrop>=10?'risk-high':b28.addDrop>=6?'risk-med':'risk-low'}">
+          <div class="risk-dot ${b28.addDrop>=10?'risk-dot-high':b28.addDrop>=6?'risk-dot-med':'risk-dot-low'}"></div>
+          추가 하락&ensp;<strong>−${b28.addDrop}%</strong>
+        </div>
+      </div>
+      <div class="buy-comment-row">${b28.comment}</div>`;
+    ggBuyGrid.appendChild(card);
+  });
+}
+
 /* ═══════════════════════ INIT ═══════════════════════ */
 renderDynamic();
 renderSeoul();
 renderCheongak();
+renderGyeonggi();
 loadData();
 if (IS_SERVER) setRefreshUI("live", "데이터 새로고침");
 </script>
