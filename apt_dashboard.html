@@ -615,6 +615,23 @@
           <span class="calc-unit">% (통상 40~60%)</span>
         </div>
       </div>
+
+      <div class="calc-field">
+        <label class="calc-label">연소득 (만원) — DSR 계산용</label>
+        <div class="calc-input-row">
+          <input class="calc-input" id="calcSalary" type="number" placeholder="예: 6000" oninput="calcFunds()" />
+          <span class="calc-unit">만원/년</span>
+        </div>
+        <div class="calc-hint" id="calcSalaryHint"></div>
+      </div>
+
+      <div class="calc-field">
+        <label class="calc-label">대출 금리 (연 %)</label>
+        <div class="calc-input-row">
+          <input class="calc-input" id="calcRate" type="number" value="3.8" step="0.1" min="1" max="15" oninput="calcFunds()" />
+          <span class="calc-unit">% (원리금균등상환 30년)</span>
+        </div>
+      </div>
     </div>
 
     <!-- 결과 패널 -->
@@ -666,6 +683,32 @@
           <div class="clg-row" id="loanRow2"></div>
         </div>
         <div class="calc-loan-note" id="loanNote"></div>
+      </div>
+
+      <!-- DSR 한도 박스 -->
+      <div class="calc-dsr-box" id="calcDsrBox" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div class="calc-section-label">DSR 40% 기준 대출 한도</div>
+          <span class="dsr-badge" id="dsrLimitBadge"></span>
+        </div>
+        <div class="dsr-grid">
+          <div class="dsr-row dsr-head">
+            <div>항목</div><div>금액</div>
+          </div>
+          <div class="dsr-row">
+            <div>연소득 기준 월 최대 상환액 (DSR 40%)</div>
+            <div id="dsrMaxMonthly" style="font-weight:800;color:#080808;"></div>
+          </div>
+          <div class="dsr-row">
+            <div>DSR 기준 최대 대출 가능액 (30년·연 <span id="dsrRateLabel"></span>%)</div>
+            <div id="dsrMaxLoan" style="font-weight:800;color:#1a6bff;"></div>
+          </div>
+          <div class="dsr-row dsr-highlight">
+            <div>실제 적용 대출 한도 (LTV·DSR 중 낮은 값)</div>
+            <div id="dsrEffective" style="font-weight:800;color:#6d3aff;"></div>
+          </div>
+        </div>
+        <div class="dsr-binding-note" id="dsrBindingNote"></div>
       </div>
 
       <!-- 최종 실필요 현금 -->
@@ -786,6 +829,20 @@
   /* 연동 후 계산기 하이라이트 */
   @keyframes calcHighlight { 0%{box-shadow:0 0 0 0 rgba(109,58,255,.4)} 70%{box-shadow:0 0 0 10px rgba(109,58,255,0)} 100%{box-shadow:none} }
   .calc-linked { animation:calcHighlight .8s ease-out; }
+
+  /* ── DSR 박스 ── */
+  .calc-dsr-box { border:1px solid #b89eff; border-radius:8px; padding:18px 20px; background:#faf8ff; }
+  .dsr-badge { font-size:11px; font-weight:800; padding:3px 10px; border-radius:4px; }
+  .dsr-badge-ltv { background:#ebf2ff; color:#1a6bff; }
+  .dsr-badge-dsr { background:#fff4eb; color:#e07000; }
+  .dsr-grid { border:1px solid #e8e0ff; border-radius:6px; overflow:hidden; }
+  .dsr-row { display:grid; grid-template-columns:1fr auto; }
+  .dsr-row > div { padding:10px 12px; font-size:12px; font-weight:600; border-bottom:1px solid #f0ebff; }
+  .dsr-row:last-child > div { border-bottom:none; }
+  .dsr-head { background:#f3f0ff; }
+  .dsr-head > div { font-size:11px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:.05em; }
+  .dsr-highlight > div { background:#f3f0ff; }
+  .dsr-binding-note { font-size:11px; color:#7a5fff; margin-top:10px; line-height:1.6; font-weight:600; }
 </style> { padding:6px 14px; font-size:12px; font-weight:600; color:#888; background:#fff; border:1px solid #d8d8d8; border-radius:4px; cursor:pointer; transition:background .1s,color .1s,border-color .1s; }
   .cq-filter-btn:hover { background:#f5f5f5; }
   .cq-filter-btn.active { background:#6d3aff; color:#fff; border-color:#6d3aff; }
@@ -1889,15 +1946,68 @@ function calcFunds() {
   document.getElementById("loanNote").textContent =
     (noteMap[_region]||"") + (_isNoHouse ? " 무주택자 우대 적용." : " 유주택자 기준.");
 
-  /* ── 3. 실필요 현금 요약 ── */
-  const totalCash1 = contract + jungdoOwn + balanceOwn1;
+  /* ── 3. DSR 계산 (연소득 입력 시) ── */
+  const salary = parseFloat(document.getElementById("calcSalary").value) || 0;
+  const rate   = parseFloat(document.getElementById("calcRate").value)   || 3.8;
+  const dsrBox = document.getElementById("calcDsrBox");
+
+  let effectiveMortgage = mortgageMax1; /* DSR 미입력 시 LTV 그대로 */
+
+  if (salary > 0) {
+    dsrBox.style.display = "block";
+
+    /* 월 최대 상환 가능액 = 연소득 × 40% ÷ 12 (단위: 만원) */
+    const monthlyMaxRepay = Math.round(salary * 0.4 / 12);
+
+    /* DSR 기준 최대 대출액: 원리금균등상환(PMT 역산) 30년
+       월이율 r = rate/100/12, n = 360개월
+       대출액 P = 월상환액 × (1-(1+r)^-n) / r                */
+    const r = rate / 100 / 12;
+    const n = 360;
+    const dsrMaxLoan = r > 0
+      ? Math.round(monthlyMaxRepay * (1 - Math.pow(1 + r, -n)) / r)
+      : Math.round(monthlyMaxRepay * n);
+
+    /* 실제 적용 담보대출 = min(LTV 한도, DSR 한도) */
+    const ltvBinding = mortgageMax1 <= dsrMaxLoan;
+    effectiveMortgage = Math.min(mortgageMax1, dsrMaxLoan);
+
+    document.getElementById("dsrRateLabel").textContent = rate;
+    document.getElementById("dsrMaxMonthly").textContent =
+      `월 ${fmtW(monthlyMaxRepay)} (연 ${fmtW(Math.round(salary * 0.4))})`;
+    document.getElementById("dsrMaxLoan").textContent = fmtW(dsrMaxLoan);
+    document.getElementById("dsrEffective").textContent = fmtW(effectiveMortgage);
+
+    const badge = document.getElementById("dsrLimitBadge");
+    if (ltvBinding) {
+      badge.textContent = "LTV 한도 적용";
+      badge.className   = "dsr-badge dsr-badge-ltv";
+      document.getElementById("dsrBindingNote").textContent =
+        `LTV 한도(${fmtW(mortgageMax1)})가 DSR 한도(${fmtW(dsrMaxLoan)})보다 낮아 LTV가 실제 제약입니다.`;
+    } else {
+      badge.textContent = "DSR 한도 적용";
+      badge.className   = "dsr-badge dsr-badge-dsr";
+      document.getElementById("dsrBindingNote").textContent =
+        `DSR 40% 한도(${fmtW(dsrMaxLoan)})가 LTV 한도(${fmtW(mortgageMax1)})보다 낮아 소득이 실제 제약입니다. 연소득을 높이거나 대출 기간·금리를 조정해야 합니다.`;
+    }
+
+    document.getElementById("calcSalaryHint").textContent =
+      `월 최대 상환액 ${fmtW(monthlyMaxRepay)} · DSR 한도 ${fmtW(dsrMaxLoan)}`;
+  } else {
+    dsrBox.style.display = "none";
+    document.getElementById("calcSalaryHint").textContent = "";
+  }
+
+  /* ── 4. 실필요 현금 요약 ── */
+  const effectiveBalanceOwn = Math.max(balance - effectiveMortgage, 0);
+  const totalCash1 = contract + jungdoOwn + effectiveBalanceOwn;
 
   document.getElementById("cashContract").textContent    = fmtW(contract);
   document.getElementById("cashJungdoOwn").textContent   = jungdoOwn > 0 ? fmtW(jungdoOwn) : "0 (집단대출 전액)";
-  document.getElementById("cashBalanceOwn").textContent  = fmtW(balanceOwn1);
+  document.getElementById("cashBalanceOwn").textContent  = fmtW(effectiveBalanceOwn);
   document.getElementById("cashTotal").textContent       = fmtW(totalCash1);
   document.getElementById("cashJungdoLoan").textContent  = fmtW(jungdoLoan) + " (입주 시 주담대로 전환)";
-  document.getElementById("cashMortgage").textContent    = fmtW(mortgageMax1);
+  document.getElementById("cashMortgage").textContent    = fmtW(effectiveMortgage) + (salary > 0 ? " (LTV·DSR 적용)" : " (LTV 기준)");
 }
 
 /* ═══════════════════════ INIT ═══════════════════════ */
