@@ -330,15 +330,15 @@
 <!-- Tab Navigation -->
 <div class="tab-nav-wrap">
   <div class="tab-nav">
-    <button class="tab-btn active" id="tabBtn1" onclick="switchTab(1)">지방 6개 도시</button>
-    <button class="tab-btn"        id="tabBtn2" onclick="switchTab(2)">서울 25개 구별 분석</button>
-    <button class="tab-btn"        id="tabBtn3" onclick="switchTab(3)">청약 정보</button>
-    <button class="tab-btn"        id="tabBtn4" onclick="switchTab(4)">경기권 TOP 10</button>
+    <button class="tab-btn active" id="tabBtn1" onclick="switchTab(1)">서울 25개 구</button>
+    <button class="tab-btn"        id="tabBtn2" onclick="switchTab(2)">경기 10개 도시</button>
+    <button class="tab-btn"        id="tabBtn3" onclick="switchTab(3)">지방 6개 도시</button>
+    <button class="tab-btn"        id="tabBtn4" onclick="switchTab(4)">청약 정보</button>
   </div>
 </div>
 
 <!-- ══════════════ TAB 1: 지방 6개 도시 ══════════════ -->
-<div id="tabPanel1" class="tab-panel active">
+<div id="tabPanel1" class="tab-panel">
 
 <section class="hero">
   <div class="hero-label">아파트 매매 실거래가</div>
@@ -409,7 +409,7 @@
 </div><!-- /tabPanel1 -->
 
 <!-- ══════════════ TAB 2: 서울 25개 구별 ══════════════ -->
-<div id="tabPanel2" class="tab-panel">
+<div id="tabPanel2" class="tab-panel active">
 
 <section class="hero">
   <div class="hero-label">서울 아파트 매매 실거래가</div>
@@ -1130,9 +1130,12 @@ function pillClass(g) {
 }
 
 /* ═══════════════════════ TAB SWITCHING ═══════════════════════ */
+/* 탭 버튼 번호 → 실제 패널 번호 매핑
+   버튼1(서울)=panel2, 버튼2(경기)=panel4, 버튼3(지방)=panel1, 버튼4(청약)=panel3 */
+const TAB_PANEL = [null, 2, 4, 1, 3];
 function switchTab(n) {
   [1,2,3,4].forEach(i => {
-    document.getElementById("tabPanel"+i).classList.toggle("active", i===n);
+    document.getElementById("tabPanel"+TAB_PANEL[i]).classList.toggle("active", i===n);
     document.getElementById("tabBtn"+i).classList.toggle("active", i===n);
   });
 }
