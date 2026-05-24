@@ -69,6 +69,28 @@ CITIES = {
     "창원": {"sido": "48", "filter": "창원시"},
 }
 
+# 전월세 수집 대상: 청약 단지별 구/시군구
+# srhDelngSecd="3" = 전월세(임대). 국토부 사이트 변경 시 "2" 로 조정 필요.
+RENT_TARGETS = {
+    "서울 강남구":   {"sido": "11", "gu": "강남구"},
+    "서울 서초구":   {"sido": "11", "gu": "서초구"},
+    "서울 용산구":   {"sido": "11", "gu": "용산구"},
+    "서울 성동구":   {"sido": "11", "gu": "성동구"},
+    "서울 동대문구": {"sido": "11", "gu": "동대문구"},
+    "서울 양천구":   {"sido": "11", "gu": "양천구"},
+    "서울 노원구":   {"sido": "11", "gu": "노원구"},
+    "서울 마포구":   {"sido": "11", "gu": "마포구"},
+    "부산 해운대구": {"sido": "26", "gu": "해운대구"},
+    "대구 수성구":   {"sido": "27", "gu": "수성구"},
+    "대전 유성구":   {"sido": "30", "gu": "유성구"},
+    "울산 남구":     {"sido": "31", "gu": "남구"},
+    "창원 성산구":   {"sido": "48", "gu": "성산구"},
+    "광주 광산구":   {"sido": "29", "gu": "광산구"},
+}
+
+# 면적 구간: (하한 이상, 상한 미만) ㎡
+AREA_BRACKETS = {"59": (50.0, 70.0), "84": (75.0, 95.0)}
+
 
 def make_session():
     """세션 초기화 — 브라우저 헤더로 WMONID/JSESSIONID 쿠키 획득"""
@@ -166,6 +188,99 @@ def parse_csv(text, city_filter=None):
     return amounts, records
 
 
+def download_rent_csv(session, sido_cd, from_dt, to_dt):
+    """아파트 전월세 CSV 다운로드 (월세 건 포함)"""
+    params = {
+        "srhThingNo":    "A",   # 아파트
+        "srhDelngSecd":  "3",   # 전월세(임대) — 매매는 "1"
+        "srhAddrGbn":    "1",
+        "srhLfstsSecd":  "",
+        "srhNewRonSecd": "",
+        "srhSidoCd":     sido_cd,
+        "srhSggCd": "", "srhEmdCd": "", "srhRoadNm": "",
+        "srhLoadCd": "", "srhHsmpCd": "",
+        "srhArea": "", "srhLrArea": "",
+        "srhFromAmount": "", "srhToAmount": "",
+        "srhFromDt":     from_dt,
+        "srhToDt":       to_dt,
+        "mobileAt": "", "sidoNm": "", "sggNm": "",
+        "emdNm": "", "loadNm": "", "areaNm": "", "hsmpNm": "",
+    }
+    resp = session.post(DOWNLOAD_URL, data=params, headers=HEADERS_POST, timeout=120, verify=False)
+    resp.raise_for_status()
+    return resp.content.decode("euc-kr", errors="replace")
+
+
+def parse_rent_csv(text, gu_filter):
+    """전월세 CSV 파싱 → 월세(>0) 레코드만 반환"""
+    lines = text.splitlines()
+    header_idx = next((i for i, l in enumerate(lines) if l.strip().startswith('"NO"')), None)
+    if header_idx is None:
+        return []
+    reader = csv.DictReader(io.StringIO("\n".join(lines[header_idx:])))
+    records = []
+    for row in reader:
+        if gu_filter and gu_filter not in row.get("시군구", ""):
+            continue
+        try:
+            area = float(row.get("전용면적(㎡)", "").strip())
+            rent = float((row.get("월세(만원)", "") or "0").replace(",", "").strip())
+            dep  = float((row.get("보증금(만원)", "") or "0").replace(",", "").strip())
+        except (ValueError, AttributeError):
+            continue
+        if rent <= 0:
+            continue  # 전세(월세=0) 제외
+        records.append({"area": area, "rent": rent, "deposit": dep,
+                        "ym": row.get("계약년월", "").strip()})
+    return records
+
+
+def aggregate_rent(records):
+    """면적 구간(59형/84형)별 월세 통계 계산"""
+    buckets = {k: [] for k in AREA_BRACKETS}
+    for r in records:
+        for key, (lo, hi) in AREA_BRACKETS.items():
+            if lo <= r["area"] < hi:
+                buckets[key].append(r["rent"])
+    result = {}
+    for key, rents in buckets.items():
+        if not rents:
+            continue
+        n = len(rents)
+        result[key] = {
+            "count":  n,
+            "avg":    round(sum(rents) / n),
+            "median": round(sorted(rents)[n // 2]),
+            "min":    int(min(rents)),
+            "max":    int(max(rents)),
+        }
+    return result
+
+
+def collect_rent_data(session):
+    """청약 단지 구/시군구별 최근 6개월 월세 실거래 수집"""
+    rent = {}
+    sido_cache = {}  # 같은 sido는 한 번만 다운로드
+
+    for city, cfg in RENT_TARGETS.items():
+        sido, gu = cfg["sido"], cfg["gu"]
+        print(f"  [전월세] {city} ...", end=" ", flush=True)
+        try:
+            if sido not in sido_cache:
+                sido_cache[sido] = download_rent_csv(session, sido, FROM_DT, TO_DT)
+                time.sleep(1)
+            records = parse_rent_csv(sido_cache[sido], gu)
+            stats   = aggregate_rent(records)
+            if stats:
+                rent[city] = stats
+                print({k: f"{v['avg']}만원({v['count']}건)" for k, v in stats.items()})
+            else:
+                print("월세 데이터 없음")
+        except Exception as e:
+            print(f"오류: {e}")
+    return rent
+
+
 def calc_stats(amounts):
     if not amounts:
         return None
@@ -176,7 +291,7 @@ def calc_stats(amounts):
             "min": min(amounts), "max": max(amounts)}
 
 
-def save_data_json(results, meta, filepath):
+def save_data_json(results, meta, filepath, rent_data=None):
     """GitHub Pages용 경량 JSON (transactions 제외, HTML이 기대하는 영문 키)"""
     summary = {
         city: {
@@ -188,8 +303,12 @@ def save_data_json(results, meta, filepath):
         }
         for city, s in results.items()
     }
+    output = {"meta": meta, "summary": summary}
+    if rent_data:
+        output["rent"] = rent_data
+        output["rent_updated"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     with open(filepath, "w", encoding="utf-8") as f:
-        json.dump({"meta": meta, "summary": summary}, f, ensure_ascii=False, indent=2)
+        json.dump(output, f, ensure_ascii=False, indent=2)
     print(f"  data.json 저장 완료: {filepath}")
 
 
@@ -293,6 +412,15 @@ def main():
     print("  * 출처: 국토교통부 실거래가 공개시스템 (rt.molit.go.kr)")
     print("  * 계약일 기준 데이터 / 해제 거래 포함될 수 있음")
 
+    # 전월세 실거래 수집
+    print("\n[전월세 실거래 데이터 수집]")
+    print(f"  대상: {len(RENT_TARGETS)}개 구/시군구 · 기간: {FROM_DT} ~ {TO_DT}")
+    rent_data = collect_rent_data(session)
+    if rent_data:
+        print(f"  전월세 수집 완료: {len(rent_data)}개 지역")
+    else:
+        print("  전월세 데이터 없음 (파라미터 확인 필요 — srhDelngSecd 값 조정)")
+
     # JSON 저장
     meta = {
         "source":        "국토교통부 실거래가 공개시스템",
@@ -303,7 +431,7 @@ def main():
         "unit":          "만원",
     }
     save_json(results, all_records, "apt_transactions.json")
-    save_data_json(results, meta, "data.json")
+    save_data_json(results, meta, "data.json", rent_data)
 
 
 if __name__ == "__main__":

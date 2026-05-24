@@ -756,9 +756,9 @@
           </div>
           <div class="extra-card extra-rent">
             <div class="extra-icon">💰</div>
-            <div class="extra-title">예상 월세 수입 (추정)</div>
-            <div class="extra-val" id="resRentRange">—</div>
-            <div class="extra-sub" id="resRentSub">분양가 입력 시 표시</div>
+            <div class="extra-title">예상 월세 수입</div>
+            <span class="rent-badge" id="rentSourceBadge">분양가 입력 시 표시</span>
+            <div id="rentDataWrap" style="margin-top:10px;">—</div>
           </div>
         </div>
         <div class="extra-note" id="extraNote"></div>
@@ -922,6 +922,23 @@
   .extra-sub   { font-size:11px; color:#888; line-height:1.4; }
   .extra-note  { font-size:11px; color:#999; margin-top:12px; padding-top:10px; border-top:1px solid #eee; line-height:1.5; }
   @media(max-width:500px){.extra-row{flex-direction:column;}}
+
+  /* ── 월세 카드 내부 요소 ── */
+  .rent-badge { display:inline-block; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; letter-spacing:.03em; }
+  .rent-badge-real   { background:#d4f7e8; color:#00875a; }
+  .rent-badge-est    { background:#ede5ff; color:#6d3aff; }
+  .rent-badge-nodata { background:#ffe8d6; color:#c04f00; }
+  .rent-bracket-row { display:flex; align-items:baseline; gap:6px; padding:4px 0; border-bottom:1px solid #e8f5f0; }
+  .rent-bracket-row:last-of-type { border-bottom:none; }
+  .rent-bracket-type { font-size:11px; font-weight:700; color:#888; width:40px; flex-shrink:0; }
+  .rent-bracket-val  { font-size:16px; font-weight:900; color:#00875a; }
+  .rent-bracket-cnt  { font-size:10px; color:#aaa; }
+  .rent-stat-row { display:flex; justify-content:space-between; padding:4px 0; font-size:11px; color:#666; }
+  .rent-stat-val { font-weight:800; color:#080808; }
+  .rent-yield-val { font-weight:900; color:#00875a; }
+  .rent-est-range { font-size:18px; font-weight:900; color:#00875a; padding:4px 0; }
+  .rent-est-unit  { font-size:12px; font-weight:600; color:#888; }
+  .rent-no-data   { font-size:12px; color:#aaa; text-align:center; padding:6px 0; }
 
   /* ── 지하철 배지 ── */
   .cheong-subway { display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:8px 20px 0; }
@@ -1518,6 +1535,9 @@ async function loadData() {
       return;
     }
     const data = await res.json();
+    if (data.rent) {
+      RENT_DATA = data.rent;
+    }
     if (data.summary && Object.keys(data.summary).length > 0) {
       SUMMARY = data.summary;
       renderDynamic();
@@ -1719,6 +1739,7 @@ function getCalcRegion(item) {
 
 /* ── 청약 카드 → 자금 계산기 자동 연동 ── */
 function jumpToCalc(item) {
+  _calcLinkedCity = item.city;   // 전월세 조회용 구/시군구
   document.getElementById("calcPrice").value = item.avgPrice;
   setContractRatio(item.contractRatio || 10);
   setRegion(getCalcRegion(item));
@@ -2017,9 +2038,11 @@ function renderCheongak() {
 }
 
 /* ═══════════════════════ 자금 계산기 ═══════════════════════ */
-let _contractRatio = 10;   // 계약금 비율 (%)
-let _isNoHouse     = true; // 무주택 여부
-let _region        = "규제"; // 지역 구분
+let _contractRatio  = 10;     // 계약금 비율 (%)
+let _isNoHouse      = true;   // 무주택 여부
+let _region         = "규제"; // 지역 구분
+let _calcLinkedCity = null;   // 청약 카드에서 연동된 구/시군구 (예: "서울 강남구")
+let RENT_DATA       = {};     // data.json의 rent 필드 (구/시군구 → 면적구간 → 통계)
 
 function setContractRatio(v) {
   _contractRatio = v;
@@ -2213,26 +2236,91 @@ function calcFunds() {
   document.getElementById("resResidence").textContent    = residenceLabel;
   document.getElementById("resResidenceSub").textContent = residenceSubMap[_region] || "";
 
-  /* ── 6. 예상 월세 수입 추정 ── */
-  const rentLow  = Math.round(price * 0.003); /* 0.3% 수익률 */
-  const rentHigh = Math.round(price * 0.004); /* 0.4% 수익률 */
+  /* ── 6. 예상 월세 수입 ── */
+  const rentWrap  = document.getElementById("rentDataWrap");
+  const rentBadge = document.getElementById("rentSourceBadge");
+  const extraNotes = [];
+
   if (price > 0) {
-    document.getElementById("resRentRange").textContent = `${fmtW(rentLow)} ~ ${fmtW(rentHigh)}`;
-    const annualYieldLow  = (rentLow  * 12 / price * 100).toFixed(1);
-    const annualYieldHigh = (rentHigh * 12 / price * 100).toFixed(1);
-    document.getElementById("resRentSub").textContent =
-      `연 수익률 ${annualYieldLow}~${annualYieldHigh}% · 분양가 기준 추산`;
+    const distData = _calcLinkedCity ? (RENT_DATA[_calcLinkedCity] || null) : null;
+
+    if (distData && Object.keys(distData).length > 0) {
+      /* ── 실거래 데이터 모드 ── */
+      rentBadge.textContent = `실거래 기반 · ${_calcLinkedCity}`;
+      rentBadge.className   = "rent-badge rent-badge-real";
+
+      const bracketLabel = {"59": "59형", "84": "84형"};
+      let html = "";
+      let bestRent = 0; // 연 수익률 계산용 (최고 평형 기준)
+
+      for (const [key, label] of Object.entries(bracketLabel)) {
+        if (!distData[key]) continue;
+        const d = distData[key];
+        html += `<div class="rent-bracket-row">
+          <span class="rent-bracket-type">${label}</span>
+          <span class="rent-bracket-val">${d.avg.toLocaleString()}만원<span style="font-size:11px;font-weight:600;color:#888;">/월</span></span>
+          <span class="rent-bracket-cnt">${d.count}건 · 중위 ${d.median.toLocaleString()}만원</span>
+        </div>`;
+        if (d.avg > bestRent) bestRent = d.avg;
+      }
+
+      if (bestRent > 0) {
+        const annualIncome = bestRent * 12;
+        const yieldPct     = (annualIncome / price * 100).toFixed(2);
+        html += `<div class="rent-stat-row" style="margin-top:8px;border-top:1px solid #d4f7e8;padding-top:6px;">
+          <span>연간 임대수익 (최대 평형 기준)</span>
+          <span class="rent-stat-val">${fmtW(annualIncome)}</span>
+        </div>
+        <div class="rent-stat-row">
+          <span>분양가 대비 임대수익률</span>
+          <span class="rent-yield-val">연 ${yieldPct}%</span>
+        </div>`;
+        extraNotes.push(`💡 월세 데이터: 국토부 실거래가 기준 최근 6개월. 보증금·층수·향에 따라 실제 월세는 달라질 수 있습니다.`);
+      }
+      rentWrap.innerHTML = html;
+
+    } else if (_calcLinkedCity) {
+      /* ── 연동됐으나 데이터 없음 ── */
+      rentBadge.textContent = "해당 지역 데이터 부족";
+      rentBadge.className   = "rent-badge rent-badge-nodata";
+      _showRentEstimate(rentWrap, price);
+      extraNotes.push(`💡 ${_calcLinkedCity} 전월세 실거래 데이터가 부족합니다. 분양가 기준 추산값을 표시합니다.`);
+
+    } else {
+      /* ── 독립 사용 (청약 카드 미연동) ── */
+      rentBadge.textContent = "분양가 0.3~0.4% 추산";
+      rentBadge.className   = "rent-badge rent-badge-est";
+      _showRentEstimate(rentWrap, price);
+      extraNotes.push(`💡 청약 단지 카드의 "자금 계산기로 연동" 버튼을 누르면 해당 구/시군구 실거래 기반 월세를 표시합니다.`);
+    }
+  } else {
+    rentBadge.textContent = "분양가 입력 시 표시";
+    rentBadge.className   = "rent-badge rent-badge-est";
+    rentWrap.innerHTML    = "—";
   }
 
   /* 추가 노트 */
-  const extraNotes = [];
   if (residenceYears > 0) {
-    extraNotes.push(`⚠️ 실거주 의무 ${residenceYears}년: 입주일부터 의무 거주 기간 동안 전세·월세 불가. 위반 시 분양권 환수.`);
+    extraNotes.unshift(`⚠️ 실거주 의무 ${residenceYears}년: 입주일부터 의무 거주 기간 동안 전세·월세 불가. 위반 시 분양권 환수.`);
   }
-  if (price > 0) {
-    extraNotes.push(`💡 월세 추산은 분양가 기준 0.3~0.4% 수익률로 계산한 참고값입니다. 실제 시세는 지역·층수·면적에 따라 다릅니다.`);
-  }
-  document.getElementById("extraNote").textContent = extraNotes.join(" ");
+  document.getElementById("extraNote").textContent = extraNotes.join("  ");
+}
+
+/* 추산 월세 렌더 헬퍼 */
+function _showRentEstimate(wrap, price) {
+  const lo = Math.round(price * 0.003), hi = Math.round(price * 0.004);
+  const annLo = lo * 12, annHi = hi * 12;
+  const yLo = (annLo / price * 100).toFixed(1), yHi = (annHi / price * 100).toFixed(1);
+  wrap.innerHTML = `
+    <div class="rent-est-range">${fmtW(lo)} ~ ${fmtW(hi)}<span class="rent-est-unit">/월</span></div>
+    <div class="rent-stat-row" style="margin-top:6px;">
+      <span>연간 수입 추산</span>
+      <span class="rent-stat-val">${fmtW(annLo)} ~ ${fmtW(annHi)}</span>
+    </div>
+    <div class="rent-stat-row">
+      <span>분양가 대비 수익률</span>
+      <span class="rent-yield-val">연 ${yLo}~${yHi}%</span>
+    </div>`;
 }
 
 /* ═══════════════════════ 경기권 RENDER ═══════════════════════ */
