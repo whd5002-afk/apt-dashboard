@@ -743,6 +743,26 @@
           <span class="ccs-val" style="color:#aaa;" id="cashMortgage">—</span>
         </div>
       </div>
+
+      <!-- 실거주 의무 + 예상 월세 -->
+      <div class="calc-extra-box" id="calcExtraBox">
+        <div class="calc-section-label" style="margin-bottom:12px;">추가 정보</div>
+        <div class="extra-row">
+          <div class="extra-card extra-residence">
+            <div class="extra-icon">🏠</div>
+            <div class="extra-title">실거주 의무 기간</div>
+            <div class="extra-val" id="resResidence">—</div>
+            <div class="extra-sub" id="resResidenceSub">지역 선택 시 표시</div>
+          </div>
+          <div class="extra-card extra-rent">
+            <div class="extra-icon">💰</div>
+            <div class="extra-title">예상 월세 수입 (추정)</div>
+            <div class="extra-val" id="resRentRange">—</div>
+            <div class="extra-sub" id="resRentSub">분양가 입력 시 표시</div>
+          </div>
+        </div>
+        <div class="extra-note" id="extraNote"></div>
+      </div>
     </div>
 
   </div>
@@ -888,6 +908,21 @@
   .ccs-total .ccs-label { font-size:14px; font-weight:700; color:#080808; }
   .ccs-total .ccs-val   { font-size:20px; }
 
+  /* ── 추가 정보 (실거주 의무 + 월세 추정) ── */
+  .calc-extra-box { border:1px solid #d8d8d8; border-radius:8px; padding:18px 20px; margin-top:16px; }
+  .extra-row { display:flex; gap:12px; }
+  .extra-card { flex:1; border-radius:8px; padding:16px 14px; text-align:center; }
+  .extra-residence { background:#f0f7ff; border:1px solid #bdd9ff; }
+  .extra-rent      { background:#f0fff6; border:1px solid #9fe8c0; }
+  .extra-icon  { font-size:22px; margin-bottom:6px; }
+  .extra-title { font-size:11px; font-weight:700; color:#666; text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; }
+  .extra-val   { font-size:20px; font-weight:900; color:#080808; margin-bottom:4px; }
+  .extra-residence .extra-val { color:#1a6bff; }
+  .extra-rent .extra-val      { color:#00875a; }
+  .extra-sub   { font-size:11px; color:#888; line-height:1.4; }
+  .extra-note  { font-size:11px; color:#999; margin-top:12px; padding-top:10px; border-top:1px solid #eee; line-height:1.5; }
+  @media(max-width:500px){.extra-row{flex-direction:column;}}
+
   /* ── 지하철 배지 ── */
   .cheong-subway { display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:8px 20px 0; }
   .cheong-subway-lbl { font-size:10px; font-weight:700; color:#aaa; text-transform:uppercase; letter-spacing:.06em; flex-shrink:0; }
@@ -917,7 +952,7 @@
   .dsr-head > div { font-size:11px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:.05em; }
   .dsr-highlight > div { background:#f3f0ff; }
   .dsr-binding-note { font-size:11px; color:#7a5fff; margin-top:10px; line-height:1.6; font-weight:600; }
-</style> { padding:6px 14px; font-size:12px; font-weight:600; color:#888; background:#fff; border:1px solid #d8d8d8; border-radius:4px; cursor:pointer; transition:background .1s,color .1s,border-color .1s; }
+  .cq-filter-btn { padding:6px 14px; font-size:12px; font-weight:600; color:#888; background:#fff; border:1px solid #d8d8d8; border-radius:4px; cursor:pointer; transition:background .1s,color .1s,border-color .1s; }
   .cq-filter-btn:hover { background:#f5f5f5; }
   .cq-filter-btn.active { background:#6d3aff; color:#fff; border-color:#6d3aff; }
 </style>
@@ -2165,6 +2200,39 @@ function calcFunds() {
   document.getElementById("cashTotal").textContent       = fmtW(totalCash1);
   document.getElementById("cashJungdoLoan").textContent  = fmtW(jungdoLoan) + " (입주 시 주담대로 전환)";
   document.getElementById("cashMortgage").textContent    = fmtW(effectiveMortgage) + (salary > 0 ? " (LTV·DSR 적용)" : " (LTV 기준)");
+
+  /* ── 5. 실거주 의무 기간 ── */
+  const residenceMap = { "규제": 3, "조정": 1, "일반": 0 };
+  const residenceYears = residenceMap[_region] ?? 0;
+  const residenceLabel = residenceYears > 0 ? `${residenceYears}년` : "없음";
+  const residenceSubMap = {
+    "규제": "투기과열지구 의무 거주",
+    "조정": "조정대상지역 의무 거주",
+    "일반": "실거주 의무 없음 (전세·월세 가능)",
+  };
+  document.getElementById("resResidence").textContent    = residenceLabel;
+  document.getElementById("resResidenceSub").textContent = residenceSubMap[_region] || "";
+
+  /* ── 6. 예상 월세 수입 추정 ── */
+  const rentLow  = Math.round(price * 0.003); /* 0.3% 수익률 */
+  const rentHigh = Math.round(price * 0.004); /* 0.4% 수익률 */
+  if (price > 0) {
+    document.getElementById("resRentRange").textContent = `${fmtW(rentLow)} ~ ${fmtW(rentHigh)}`;
+    const annualYieldLow  = (rentLow  * 12 / price * 100).toFixed(1);
+    const annualYieldHigh = (rentHigh * 12 / price * 100).toFixed(1);
+    document.getElementById("resRentSub").textContent =
+      `연 수익률 ${annualYieldLow}~${annualYieldHigh}% · 분양가 기준 추산`;
+  }
+
+  /* 추가 노트 */
+  const extraNotes = [];
+  if (residenceYears > 0) {
+    extraNotes.push(`⚠️ 실거주 의무 ${residenceYears}년: 입주일부터 의무 거주 기간 동안 전세·월세 불가. 위반 시 분양권 환수.`);
+  }
+  if (price > 0) {
+    extraNotes.push(`💡 월세 추산은 분양가 기준 0.3~0.4% 수익률로 계산한 참고값입니다. 실제 시세는 지역·층수·면적에 따라 다릅니다.`);
+  }
+  document.getElementById("extraNote").textContent = extraNotes.join(" ");
 }
 
 /* ═══════════════════════ 경기권 RENDER ═══════════════════════ */
