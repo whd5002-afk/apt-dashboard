@@ -334,6 +334,7 @@
     <button class="tab-btn"        id="tabBtn2" onclick="switchTab(2)">경기 10개 도시</button>
     <button class="tab-btn"        id="tabBtn3" onclick="switchTab(3)">지방 6개 도시</button>
     <button class="tab-btn"        id="tabBtn4" onclick="switchTab(4)">청약 정보</button>
+    <button class="tab-btn"        id="tabBtn5" onclick="switchTab(5)">청년안심주택</button>
   </div>
 </div>
 
@@ -841,6 +842,190 @@
 
 </div><!-- /tabPanel4 -->
 
+<!-- ══════════════ TAB 5: 청년안심주택 ══════════════ -->
+<div id="tabPanel5" class="tab-panel">
+
+<section class="hero">
+  <div class="hero-label">SH 서울주택도시공사</div>
+  <h1>청년안심주택<br>입주 가이드</h1>
+  <p>SH 서울주택도시공사 청년안심주택 모집 공고 · 임대료 현황 · 입주 자격<br>
+     주변 시세 비교 · 청년 특화 자금 계획 계산기</p>
+  <div class="period-badge">출처: housing.seoul.go.kr · 2025~2026년 공고 기준</div>
+</section>
+
+<div class="kpi-bar">
+  <div class="kpi-item">
+    <div class="kpi-label">전체 공고 수</div>
+    <div class="kpi-value" id="yhKpiTotal">—</div>
+    <div class="kpi-sub" id="yhKpiTotalSub">2025~2026년 기준</div>
+  </div>
+  <div class="kpi-item">
+    <div class="kpi-label">모집중 / 모집예정</div>
+    <div class="kpi-value" id="yhKpiOpen">—</div>
+    <div class="kpi-sub">신청 가능한 공고 수</div>
+  </div>
+  <div class="kpi-item">
+    <div class="kpi-label">공공임대 최저 월세</div>
+    <div class="kpi-value">월 10만원~</div>
+    <div class="kpi-sub">시세 30% 공공임대 기준</div>
+  </div>
+</div>
+
+<!-- 섹션 1: 모집 공고 카드 -->
+<section class="section">
+  <div class="section-title">현재 모집 공고</div>
+  <div class="section-desc">housing.seoul.go.kr 청년안심주택 공고 목록 · 공고문 링크 클릭 시 원문 이동</div>
+  <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;" id="yhFilterRow">
+    <button class="cq-filter-btn active" data-yh-filter="all"    onclick="filterYH('all')">전체</button>
+    <button class="cq-filter-btn" data-yh-filter="모집중"        onclick="filterYH('모집중')">모집중</button>
+    <button class="cq-filter-btn" data-yh-filter="모집예정"      onclick="filterYH('모집예정')">모집예정</button>
+    <button class="cq-filter-btn" data-yh-filter="모집마감"      onclick="filterYH('모집마감')">모집마감</button>
+  </div>
+  <div class="yh-notice-grid" id="yhNoticeGrid"></div>
+</section>
+
+<!-- 섹션 2: 임대료 테이블 -->
+<section class="section">
+  <div class="section-title">청년안심주택 임대료 기준</div>
+  <div class="section-desc">공공임대(시세 30%) vs 공공지원민간임대(시세 70~85%) · 2025~2026년 공고 기준 추산 범위</div>
+  <div class="yh-rent-table-wrap">
+    <table class="yh-rent-table">
+      <thead>
+        <tr>
+          <th>면적형</th>
+          <th>임대 유형</th>
+          <th>시세 대비</th>
+          <th>보증금 범위</th>
+          <th>월세 범위</th>
+        </tr>
+      </thead>
+      <tbody id="yhRentTbody"></tbody>
+    </table>
+  </div>
+  <div style="font-size:11px;color:#aaa;margin-top:10px;line-height:1.6;">
+    ※ 임대료는 단지·층·면적에 따라 다르며, 정확한 금액은 개별 공고문 확인 필요. 보증금 조정 가능(보증금↑ 월세↓).
+  </div>
+</section>
+
+<!-- 섹션 3: 지원 조건 카드 -->
+<section class="section">
+  <div class="section-title">입주 자격 조건</div>
+  <div class="section-desc">공공임대 기준 · 공공지원민간임대는 사업자별 별도 조건 적용</div>
+  <div class="yh-cond-grid" id="yhCondGrid"></div>
+  <div style="margin-top:16px;border:1px solid #d8d8d8;border-radius:8px;padding:16px 20px;background:#fafafa;">
+    <div style="font-size:12px;font-weight:700;color:#6d3aff;margin-bottom:8px;">★ 우선공급 대상 (일반공급과 별도 경쟁)</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <span style="font-size:12px;font-weight:600;padding:4px 12px;background:#f0ebff;border-radius:4px;color:#6d3aff;">혼인 7년 이내 신혼부부</span>
+      <span style="font-size:12px;font-weight:600;padding:4px 12px;background:#f0ebff;border-radius:4px;color:#6d3aff;">만 6세 이하 자녀 한부모가족</span>
+      <span style="font-size:12px;font-weight:600;padding:4px 12px;background:#f0ebff;border-radius:4px;color:#6d3aff;">장애인 (등록 장애인)</span>
+    </div>
+  </div>
+</section>
+
+<!-- 섹션 4: 주변 시세 비교 -->
+<section class="section">
+  <div class="section-title">청년안심주택 vs 주변 시세 비교</div>
+  <div class="section-desc">서울 주요 구 전월세 실거래 기반 59형 기준 월세 · 청년안심주택(공공·민간) vs 주변 시세</div>
+  <div id="yhSiseChart" class="pb-section"></div>
+</section>
+
+<!-- 섹션 5: 자금 계획 계산기 -->
+<section class="section" style="padding-bottom:56px;">
+  <div class="section-title">청년 특화 자금 계획 계산기</div>
+  <div class="section-desc">보증금 대출 상품별 실부담 계산 · 주변 시세 대비 절약액 표시</div>
+  <div class="yh-calc-wrap">
+    <!-- 입력 패널 -->
+    <div class="yh-calc-input-panel">
+      <div class="calc-section-label" style="margin-bottom:16px;">조건 입력</div>
+
+      <div class="calc-field">
+        <label class="calc-label">보증금 (만원)</label>
+        <div class="calc-input-row">
+          <input class="calc-input" id="yhDeposit" type="number" placeholder="예: 5000" oninput="calcYH()" />
+          <span class="calc-unit">만원</span>
+        </div>
+      </div>
+
+      <div class="calc-field">
+        <label class="calc-label">월세 (만원)</label>
+        <div class="calc-input-row">
+          <input class="calc-input" id="yhMonthly" type="number" placeholder="예: 20" oninput="calcYH()" />
+          <span class="calc-unit">만원/월</span>
+        </div>
+      </div>
+
+      <div class="calc-field">
+        <label class="calc-label">전세 대출 상품</label>
+        <div class="calc-radio-row" id="yhLoanRow">
+          <button class="calc-radio active" data-yh-loan="sme"  onclick="setYHLoan('sme')">중소기업청년<br><span style="font-size:10px;font-weight:500;">한도 1.2억·연 1.5%</span></button>
+          <button class="calc-radio"        data-yh-loan="btm"  onclick="setYHLoan('btm')">청년전용버팀목<br><span style="font-size:10px;font-weight:500;">한도 1.0억·연 2.0%</span></button>
+          <button class="calc-radio"        data-yh-loan="none" onclick="setYHLoan('none')">대출 없음</button>
+        </div>
+      </div>
+
+      <div class="calc-field">
+        <label class="calc-label">비교 대상 (주변 시세)</label>
+        <div class="calc-radio-row" id="yhCompRow">
+          <button class="calc-radio active" data-yh-comp="강남" onclick="setYHComp('강남')">강남권<br><span style="font-size:10px;">약 267만원/월</span></button>
+          <button class="calc-radio"        data-yh-comp="마포" onclick="setYHComp('마포')">마포권<br><span style="font-size:10px;">약 201만원/월</span></button>
+          <button class="calc-radio"        data-yh-comp="노원" onclick="setYHComp('노원')">노원권<br><span style="font-size:10px;">약 121만원/월</span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 결과 패널 -->
+    <div class="yh-calc-result-panel">
+      <div class="calc-section-label" style="margin-bottom:16px;">자금 계획 결과</div>
+
+      <div class="yh-result-grid">
+        <div class="yh-res-card yh-res-loan">
+          <div class="yh-res-label">전세 대출 한도</div>
+          <div class="yh-res-val" id="yhResLoan">—</div>
+          <div class="yh-res-sub" id="yhResLoanSub">대출 상품 선택</div>
+        </div>
+        <div class="yh-res-card yh-res-deposit">
+          <div class="yh-res-label">실부담 보증금</div>
+          <div class="yh-res-val" id="yhResDeposit">—</div>
+          <div class="yh-res-sub">보증금 − 대출</div>
+        </div>
+        <div class="yh-res-card yh-res-interest">
+          <div class="yh-res-label">월 대출 이자</div>
+          <div class="yh-res-val" id="yhResInterest">—</div>
+          <div class="yh-res-sub" id="yhResInterestSub">이자 단순 계산</div>
+        </div>
+        <div class="yh-res-card yh-res-total">
+          <div class="yh-res-label">월 총 주거비</div>
+          <div class="yh-res-val" id="yhResTotal">—</div>
+          <div class="yh-res-sub">월세 + 월 이자</div>
+        </div>
+      </div>
+
+      <div class="yh-saving-box" id="yhSavingBox">
+        <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">주변 시세 대비 절약</div>
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <div>
+            <div style="font-size:11px;color:#888;margin-bottom:3px;">주변 시세 월세</div>
+            <div style="font-size:22px;font-weight:800;color:#aaa;" id="yhRefRent">—</div>
+          </div>
+          <div style="font-size:24px;color:#d8d8d8;">→</div>
+          <div>
+            <div style="font-size:11px;color:#888;margin-bottom:3px;">청년안심주택 총 주거비</div>
+            <div style="font-size:22px;font-weight:800;color:#6d3aff;" id="yhMyRent">—</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid #ece4ff;">
+          <div style="font-size:13px;color:#555;margin-bottom:4px;">월 절약액</div>
+          <div style="font-size:32px;font-weight:900;letter-spacing:-1px;color:#00875a;" id="yhSaveAmt">—</div>
+          <div style="font-size:13px;color:#888;margin-top:4px;" id="yhSavePct">절감률 —%</div>
+          <div style="font-size:12px;color:#aaa;margin-top:8px;" id="yhSaveNote"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div><!-- /tabPanel5 -->
+
 <style>
   .cq-filter-btn { padding:6px 14px; font-size:12px; font-weight:600; color:#888; background:#fff; border:1px solid #d8d8d8; border-radius:4px; cursor:pointer; transition:background .1s,color .1s,border-color .1s; }
   .cq-filter-btn:hover { background:#f5f5f5; }
@@ -972,6 +1157,75 @@
   .cq-filter-btn { padding:6px 14px; font-size:12px; font-weight:600; color:#888; background:#fff; border:1px solid #d8d8d8; border-radius:4px; cursor:pointer; transition:background .1s,color .1s,border-color .1s; }
   .cq-filter-btn:hover { background:#f5f5f5; }
   .cq-filter-btn.active { background:#6d3aff; color:#fff; border-color:#6d3aff; }
+
+  /* ── 청년안심주택 공고 카드 ── */
+  .yh-notice-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+  @media(max-width:720px){ .yh-notice-grid { grid-template-columns:1fr; } }
+  .yh-notice-card { border:1px solid #d8d8d8; border-radius:8px; overflow:hidden; transition:box-shadow .15s,transform .15s; display:flex; flex-direction:column; }
+  .yh-notice-card:hover { box-shadow:0 8px 24px rgba(0,0,0,.08); transform:translateY(-2px); }
+  .yh-notice-header { padding:16px 18px 12px; display:flex; align-items:flex-start; justify-content:space-between; gap:10px; border-bottom:1px solid #f0f0f0; }
+  .yh-notice-title-wrap { flex:1; }
+  .yh-notice-name { font-size:15px; font-weight:800; letter-spacing:-.3px; margin-top:6px; }
+  .yh-notice-body { padding:14px 18px; flex:1; }
+  .yh-notice-meta-row { display:flex; gap:20px; flex-wrap:wrap; }
+  .yh-meta-item { display:flex; flex-direction:column; gap:2px; }
+  .yh-meta-lbl { font-size:10px; font-weight:700; color:#aaa; text-transform:uppercase; letter-spacing:.05em; }
+  .yh-meta-val { font-size:13px; font-weight:700; color:#444; }
+  .yh-notice-link { display:block; padding:10px 18px; background:#f8f5ff; border-top:1px solid #ece4ff; font-size:12px; font-weight:700; color:#6d3aff; text-decoration:none; transition:background .15s; }
+  .yh-notice-link:hover { background:#ede5ff; }
+  .yh-type-badge { display:inline-flex; align-items:center; font-size:10px; font-weight:700; padding:2px 8px; border-radius:4px; letter-spacing:.04em; }
+  .yh-type-public  { background:#e6fff6; color:#00875a; }
+  .yh-type-private { background:#fff4eb; color:#e07000; }
+  .yh-status-open     { background:#e6fff6; color:#00875a; }
+  .yh-status-upcoming { background:#ebf2ff; color:#1a6bff; }
+  .yh-status-done     { background:#f5f5f5; color:#aaa; }
+
+  /* ── 임대료 테이블 ── */
+  .yh-rent-table-wrap { overflow-x:auto; border:1px solid #d8d8d8; border-radius:8px; }
+  .yh-rent-table { width:100%; border-collapse:collapse; }
+  .yh-rent-table thead tr { background:#f8f8f8; border-bottom:1px solid #d8d8d8; }
+  .yh-rent-table th { padding:11px 14px; font-size:11px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:.06em; text-align:left; white-space:nowrap; }
+  .yh-rent-table tbody tr { border-bottom:1px solid #f0f0f0; transition:background .1s; }
+  .yh-rent-table tbody tr:last-child { border-bottom:none; }
+  .yh-rent-table tbody tr:hover { background:#fafafa; }
+  .yh-rent-table td { padding:13px 14px; font-size:13px; font-weight:600; color:#080808; }
+  .yh-row-public  { border-top:2px solid #e8e8e8; }
+  .yh-size-cell { font-size:14px; font-weight:800; color:#080808; white-space:nowrap; }
+  .yh-ratio-badge { display:inline-flex; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700; }
+  .yh-ratio-public  { background:#e6fff6; color:#00875a; }
+  .yh-ratio-private { background:#fff4eb; color:#e07000; }
+  .yh-monthly-cell { color:#6d3aff; }
+
+  /* ── 지원 조건 카드 ── */
+  .yh-cond-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; }
+  @media(max-width:900px){ .yh-cond-grid { grid-template-columns:repeat(3,1fr); } }
+  @media(max-width:600px){ .yh-cond-grid { grid-template-columns:repeat(2,1fr); } }
+  .yh-cond-card { border:1px solid #d8d8d8; border-radius:8px; padding:18px 14px; text-align:center; transition:box-shadow .15s; }
+  .yh-cond-card:hover { box-shadow:0 4px 16px rgba(109,58,255,.1); border-color:#b89eff; }
+  .yh-cond-icon { font-size:26px; margin-bottom:8px; }
+  .yh-cond-title { font-size:10px; font-weight:700; color:#aaa; text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; }
+  .yh-cond-value { font-size:14px; font-weight:800; color:#080808; margin-bottom:6px; letter-spacing:-.3px; }
+  .yh-cond-desc { font-size:11px; color:#888; line-height:1.5; }
+
+  /* ── 자금 계산기 ── */
+  .yh-calc-wrap { display:grid; grid-template-columns:340px 1fr; gap:20px; align-items:flex-start; }
+  @media(max-width:860px){ .yh-calc-wrap { grid-template-columns:1fr; } }
+  .yh-calc-input-panel { border:1px solid #d8d8d8; border-radius:8px; padding:22px; display:flex; flex-direction:column; gap:18px; }
+  .yh-calc-result-panel { display:flex; flex-direction:column; gap:16px; }
+  .yh-result-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+  .yh-res-card { border-radius:8px; padding:16px 14px; }
+  .yh-res-loan     { background:#f0ebff; }
+  .yh-res-deposit  { background:#ebf2ff; }
+  .yh-res-interest { background:#fff4eb; }
+  .yh-res-total    { background:#e6fff6; }
+  .yh-res-label { font-size:10px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+  .yh-res-val   { font-size:20px; font-weight:900; letter-spacing:-.5px; margin-bottom:3px; }
+  .yh-res-loan .yh-res-val     { color:#6d3aff; }
+  .yh-res-deposit .yh-res-val  { color:#1a6bff; }
+  .yh-res-interest .yh-res-val { color:#e07000; }
+  .yh-res-total .yh-res-val    { color:#00875a; }
+  .yh-res-sub { font-size:11px; color:#888; }
+  .yh-saving-box { border:1px solid #b89eff; border-radius:8px; padding:20px 22px; background:#faf8ff; }
 </style>
 
 <div class="disclaimer">
@@ -1183,10 +1437,10 @@ function pillClass(g) {
 
 /* ═══════════════════════ TAB SWITCHING ═══════════════════════ */
 /* 탭 버튼 번호 → 실제 패널 번호 매핑
-   버튼1(서울)=panel2, 버튼2(경기)=panel4, 버튼3(지방)=panel1, 버튼4(청약)=panel3 */
-const TAB_PANEL = [null, 2, 4, 1, 3];
+   버튼1(서울)=panel2, 버튼2(경기)=panel4, 버튼3(지방)=panel1, 버튼4(청약)=panel3, 버튼5(청년안심주택)=panel5 */
+const TAB_PANEL = [null, 2, 4, 1, 3, 5];
 function switchTab(n) {
-  [1,2,3,4].forEach(i => {
+  [1,2,3,4,5].forEach(i => {
     document.getElementById("tabPanel"+TAB_PANEL[i]).classList.toggle("active", i===n);
     document.getElementById("tabBtn"+i).classList.toggle("active", i===n);
   });
@@ -1537,6 +1791,10 @@ async function loadData() {
     const data = await res.json();
     if (data.rent) {
       RENT_DATA = data.rent;
+    }
+    if (data.youth_housing && data.youth_housing.length > 0) {
+      YOUTH_NOTICES = data.youth_housing;
+      renderYouthHousing();
     }
     if (data.summary && Object.keys(data.summary).length > 0) {
       SUMMARY = data.summary;
@@ -2515,11 +2773,200 @@ function renderGyeonggi() {
   });
 }
 
+/* ═══════════════════════ 청년안심주택 DATA ═══════════════════════ */
+const YOUTH_NOTICES_STATIC = [
+  { name:"2026년 1차 청년안심주택(공공임대)", type:"공공임대", date:"2026-03-31", announce:"2026-08-12", status:"모집마감", units:573,  url:"https://soco.seoul.go.kr/youth/bbs/BMSR00015/view.do?boardId=6485&menuNo=400008" },
+  { name:"화랑대역 에이트플레이스(민간임대)", type:"민간임대", date:"2026-05-26", announce:"2026-07-31", status:"모집예정", units:null,  url:"https://soco.seoul.go.kr/youth/bbs/BMSR00015/view.do?boardId=6490&menuNo=400008" },
+  { name:"2025년 3차 청년안심주택(공공임대)", type:"공공임대", date:"2025-12-30", announce:"2026-05-15", status:"모집마감", units:322,  url:"https://soco.seoul.go.kr/youth/bbs/BMSR00015/view.do?boardId=6300&menuNo=400008" },
+  { name:"2025년 2차 청년안심주택(공공임대)", type:"공공임대", date:"2025-08-20", announce:"2025-12-10", status:"모집마감", units:412,  url:"https://soco.seoul.go.kr/youth/bbs/BMSR00015/view.do?boardId=6214&menuNo=400008" },
+  { name:"역촌역 청년안심주택(민간임대)",     type:"민간임대", date:"2025-06-10", announce:"2025-08-20", status:"모집마감", units:98,   url:"https://soco.seoul.go.kr/youth/bbs/BMSR00015/view.do?boardId=6100&menuNo=400008" },
+  { name:"2025년 1차 청년안심주택(공공임대)", type:"공공임대", date:"2025-03-28", announce:"2025-07-30", status:"모집마감", units:524,  url:"https://soco.seoul.go.kr/youth/bbs/BMSR00015/view.do?boardId=6401&menuNo=400008" },
+];
+let YOUTH_NOTICES = [...YOUTH_NOTICES_STATIC];
+
+const YOUTH_RENT_TABLE = [
+  { size:"16~26㎡", type:"공공임대",     tag:"public",  ratio:"시세 30%",    deposit:"3,000~7,000만원",   monthly:"10~25만원",  avg:17 },
+  { size:"16~26㎡", type:"공공지원민간", tag:"private", ratio:"시세 70~85%", deposit:"4,000~9,000만원",   monthly:"25~55만원",  avg:40 },
+  { size:"27~36㎡", type:"공공임대",     tag:"public",  ratio:"시세 30%",    deposit:"5,000만~1.2억",     monthly:"20~35만원",  avg:27 },
+  { size:"27~36㎡", type:"공공지원민간", tag:"private", ratio:"시세 70~85%", deposit:"6,000만~1.5억",     monthly:"40~70만원",  avg:55 },
+  { size:"37~49㎡", type:"공공임대",     tag:"public",  ratio:"시세 30%",    deposit:"7,000만~1.5억",     monthly:"28~45만원",  avg:36 },
+  { size:"37~49㎡", type:"공공지원민간", tag:"private", ratio:"시세 70~85%", deposit:"8,000만~1.8억",     monthly:"50~90만원",  avg:70 },
+];
+
+const YOUTH_CONDITIONS = [
+  { icon:"🎂", title:"연령 조건",    value:"19~39세",       desc:"공고일 기준 만 나이" },
+  { icon:"🏠", title:"무주택 요건",  value:"무주택 세대구성원", desc:"신청자 포함 세대원 전원 무주택" },
+  { icon:"💵", title:"소득 기준",    value:"월평균 120%↓",  desc:"1인 기준 약 390만원/월 (2026년)" },
+  { icon:"🏦", title:"자산 기준",    value:"2억 6,900만원", desc:"부동산 포함 총 자산 한도" },
+  { icon:"⭐", title:"우선공급 대상", value:"3개 유형",      desc:"신혼부부·한부모·장애인" },
+];
+
+const YH_COMP_RENT = { "강남": 267, "마포": 201, "노원": 121 };
+let _yhLoan = "sme";
+let _yhComp = "강남";
+
+/* ── 공고 카드 렌더 ── */
+function filterYH(filter) {
+  document.querySelectorAll("#yhFilterRow .cq-filter-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.yhFilter === filter));
+  renderYHNotices(filter);
+}
+
+function renderYHNotices(filter) {
+  const list = filter === "all" ? YOUTH_NOTICES : YOUTH_NOTICES.filter(n => n.status === filter);
+  const grid = document.getElementById("yhNoticeGrid");
+  if (!list.length) {
+    grid.innerHTML = `<div style="padding:32px;text-align:center;color:#aaa;font-size:14px;grid-column:1/-1;">해당 상태의 공고가 없습니다.</div>`;
+    return;
+  }
+  grid.innerHTML = list.map(n => {
+    const sCls = n.status === "모집중" ? "yh-status-open" : n.status === "모집예정" ? "yh-status-upcoming" : "yh-status-done";
+    const tCls = n.type === "공공임대" ? "yh-type-public" : "yh-type-private";
+    const unitsHtml = n.units ? `<div class="yh-meta-item"><div class="yh-meta-lbl">공급세대</div><div class="yh-meta-val">${n.units.toLocaleString()}세대</div></div>` : "";
+    return `<div class="yh-notice-card">
+      <div class="yh-notice-header">
+        <div class="yh-notice-title-wrap">
+          <span class="yh-type-badge ${tCls}">${n.type}</span>
+          <div class="yh-notice-name">${n.name}</div>
+        </div>
+        <span class="status-badge ${sCls}">${n.status}</span>
+      </div>
+      <div class="yh-notice-body">
+        <div class="yh-notice-meta-row">
+          <div class="yh-meta-item"><div class="yh-meta-lbl">공고게시일</div><div class="yh-meta-val">${n.date}</div></div>
+          <div class="yh-meta-item"><div class="yh-meta-lbl">발표일</div><div class="yh-meta-val">${n.announce}</div></div>
+          ${unitsHtml}
+        </div>
+      </div>
+      <a href="${n.url}" target="_blank" class="yh-notice-link">공고문 보기 →</a>
+    </div>`;
+  }).join("");
+}
+
+/* ── 임대료 테이블 렌더 ── */
+function renderYHRentTable() {
+  let html = "", lastSize = "";
+  YOUTH_RENT_TABLE.forEach(r => {
+    const newGroup = r.size !== lastSize;
+    lastSize = r.size;
+    html += `<tr class="${newGroup ? "yh-row-public" : ""}">
+      <td class="yh-size-cell">${newGroup ? r.size : ""}</td>
+      <td><span class="yh-type-badge ${r.tag === "public" ? "yh-type-public" : "yh-type-private"}">${r.type}</span></td>
+      <td><span class="yh-ratio-badge ${r.tag === "public" ? "yh-ratio-public" : "yh-ratio-private"}">${r.ratio}</span></td>
+      <td>${r.deposit}</td>
+      <td class="yh-monthly-cell"><strong>${r.monthly}</strong></td>
+    </tr>`;
+  });
+  document.getElementById("yhRentTbody").innerHTML = html;
+}
+
+/* ── 지원 조건 카드 렌더 ── */
+function renderYHConditions() {
+  document.getElementById("yhCondGrid").innerHTML = YOUTH_CONDITIONS.map(c =>
+    `<div class="yh-cond-card">
+      <div class="yh-cond-icon">${c.icon}</div>
+      <div class="yh-cond-title">${c.title}</div>
+      <div class="yh-cond-value">${c.value}</div>
+      <div class="yh-cond-desc">${c.desc}</div>
+    </div>`
+  ).join("");
+}
+
+/* ── 시세 비교 차트 렌더 ── */
+function renderYHSiseChart() {
+  const rows = [
+    { label:"청년안심주택\n공공임대(27~36㎡)",  val:27,  color:"#00875a", sub:"시세 30% — 월 27만원 평균" },
+    { label:"청년안심주택\n민간임대(27~36㎡)",  val:55,  color:"#6d3aff", sub:"시세 70~85% — 월 55만원 평균" },
+    { label:"노원·도봉\n주변 59형 전월세",      val: (RENT_DATA["서울 노원구"] && RENT_DATA["서울 노원구"]["59"]) ? RENT_DATA["서울 노원구"]["59"].avg : 121,  color:"#1a6bff", sub:"실거래 기반 추산" },
+    { label:"마포·서대문\n주변 59형 전월세",    val: (RENT_DATA["서울 마포구"] && RENT_DATA["서울 마포구"]["59"]) ? RENT_DATA["서울 마포구"]["59"].avg : 201,  color:"#ff7a1a", sub:"실거래 기반 추산" },
+    { label:"강남·서초\n주변 59형 전월세",      val: (RENT_DATA["서울 강남구"] && RENT_DATA["서울 강남구"]["59"]) ? RENT_DATA["서울 강남구"]["59"].avg : 267,  color:"#e53030", sub:"실거래 기반 추산" },
+  ];
+  const maxVal = Math.max(...rows.map(r => r.val));
+  document.getElementById("yhSiseChart").innerHTML = rows.map(r => {
+    const pct = (r.val / maxVal * 100).toFixed(1);
+    return `<div class="pb-row">
+      <div class="pb-name" style="width:150px;">
+        <div class="pb-name-main" style="white-space:pre-line;line-height:1.4;">${r.label}</div>
+        <div class="pb-name-sub">${r.sub}</div>
+      </div>
+      <div class="pb-bars" style="flex:1;">
+        <div class="pb-bar-row">
+          <div class="pb-bar-track" style="flex:1;height:32px;">
+            <div class="pb-bar-fill" style="width:${pct}%;background:${r.color};height:100%;border-radius:4px;"></div>
+          </div>
+          <div class="pb-bar-amt" style="width:80px;font-size:15px;font-weight:800;color:${r.color};">월 ${r.val}만원</div>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ── 자금 계산기 ── */
+function setYHLoan(v) {
+  _yhLoan = v;
+  document.querySelectorAll("#yhLoanRow .calc-radio").forEach(b =>
+    b.classList.toggle("active", b.dataset.yhLoan === v));
+  calcYH();
+}
+function setYHComp(v) {
+  _yhComp = v;
+  document.querySelectorAll("#yhCompRow .calc-radio").forEach(b =>
+    b.classList.toggle("active", b.dataset.yhComp === v));
+  calcYH();
+}
+function calcYH() {
+  const dep     = parseFloat(document.getElementById("yhDeposit").value) || 0;
+  const monthly = parseFloat(document.getElementById("yhMonthly").value) || 0;
+
+  const LOAN_PRODUCTS = {
+    sme:  { limit: 12000, rate: 0.015, label: "중소기업청년 (연 1.5%)" },
+    btm:  { limit: 10000, rate: 0.020, label: "청년버팀목 (연 2.0%)" },
+    none: { limit: 0,     rate: 0,     label: "대출 없음" },
+  };
+  const prod    = LOAN_PRODUCTS[_yhLoan];
+  const loanAmt = dep > 0 ? Math.min(dep * 0.8, prod.limit) : 0;
+  const ownDep  = dep > 0 ? dep - loanAmt : 0;
+  const interest = loanAmt > 0 ? Math.round(loanAmt * prod.rate / 12) : 0;
+  const total    = monthly + interest;
+
+  const fmt = v => v > 0 ? `${Math.round(v).toLocaleString()}만원` : "—";
+  document.getElementById("yhResLoan").textContent     = loanAmt > 0 ? fmt(loanAmt) : "없음";
+  document.getElementById("yhResLoanSub").textContent  = prod.label;
+  document.getElementById("yhResDeposit").textContent  = dep > 0 ? fmt(ownDep) : "—";
+  document.getElementById("yhResInterest").textContent = interest > 0 ? fmt(interest) : "없음";
+  document.getElementById("yhResInterestSub").textContent = loanAmt > 0 ? `대출 ${fmt(loanAmt)} × ${(prod.rate*100).toFixed(1)}% / 12` : "이자 없음";
+  document.getElementById("yhResTotal").textContent    = total > 0 ? fmt(total) : "—";
+
+  const compRent = (RENT_DATA[`서울 ${_yhComp === "강남" ? "강남구" : _yhComp === "마포" ? "마포구" : "노원구"}"]?.["59"]?.avg) || YH_COMP_RENT[_yhComp];
+  document.getElementById("yhRefRent").textContent = `월 ${Math.round(compRent).toLocaleString()}만원`;
+  document.getElementById("yhMyRent").textContent  = total > 0 ? `월 ${total.toLocaleString()}만원` : "—";
+  const saved = total > 0 ? Math.round(compRent) - total : 0;
+  const pct   = total > 0 && compRent > 0 ? ((saved / compRent) * 100).toFixed(0) : 0;
+  document.getElementById("yhSaveAmt").textContent  = saved > 0 ? `월 ${saved.toLocaleString()}만원 절약` : (total > 0 ? "비슷한 수준" : "—");
+  document.getElementById("yhSaveAmt").style.color  = saved > 0 ? "#00875a" : "#aaa";
+  document.getElementById("yhSavePct").textContent  = total > 0 && saved > 0 ? `주변 시세 대비 ${pct}% 절감` : "";
+  document.getElementById("yhSaveNote").textContent = total > 0 ? `연간 약 ${(saved*12).toLocaleString()}만원 절약 · 1억 보증금 대출 이자 포함 기준` : "";
+}
+
+/* ── 청년안심주택 전체 렌더 ── */
+function renderYouthHousing() {
+  const total    = YOUTH_NOTICES.length;
+  const openCnt  = YOUTH_NOTICES.filter(n => n.status === "모집중" || n.status === "모집예정").length;
+  document.getElementById("yhKpiTotal").textContent = total + "건";
+  document.getElementById("yhKpiOpen").textContent  = openCnt > 0 ? openCnt + "건" : "없음";
+  renderYHNotices("all");
+  renderYHRentTable();
+  renderYHConditions();
+  renderYHSiseChart();
+  calcYH();
+}
+
 /* ═══════════════════════ INIT ═══════════════════════ */
 renderDynamic();
 renderSeoul();
 renderCheongak();
 renderGyeonggi();
+renderYouthHousing();
 loadData();
 if (IS_SERVER) setRefreshUI("live", "데이터 새로고침");
 </script>
