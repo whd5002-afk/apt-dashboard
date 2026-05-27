@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\JW\\\\부동산분석\\\\apt_dashboard.html\" | Measure-Object -Line\\).Lines)",
+      "PowerShell(Start-Process \"C:\\\\Users\\\\JW\\\\부동산분석\\\\apt_dashboard.html\")",
+      "PowerShell(Start-Process \"http://localhost:8080/apt_dashboard.html\")",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://localhost:8080/api/data\" -UseBasicParsing -TimeoutSec 3; \"Status: $\\($r.StatusCode\\)`n\" + $r.Content.Substring\\(0,500\\) } catch { \"Server not running: $_\" })",
+      "PowerShell(Get-Content *)",
+      "PowerShell($lines = Get-Content \"C:\\\\Users\\\\JW\\\\부동산분석\\\\apt_dashboard.html\" -Encoding UTF8; $line = $lines[1754]; Write-Host \"Line 1755: [$line]\"; $bytes = [System.Text.Encoding]::UTF8.GetBytes\\($line\\); $hex = \\($bytes | ForEach-Object { $_.ToString\\(\"X2\"\\) }\\) -join \" \"; Write-Host \"First 80 hex bytes: $\\($hex.Substring\\(0, [Math]::Min\\(240, $hex.Length\\)\\)\\)\")",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://localhost:8080/api/data\" -UseBasicParsing -TimeoutSec 3; $j = $r.Content | ConvertFrom-Json; \"Status: $\\($r.StatusCode\\)\"; \"Cities: \" + \\($j.summary.PSObject.Properties.Name -join \", \"\\); \"부산 avg: \" + $j.summary.부산.avg } catch { \"Server not running — start run_dashboard.bat first: $_\" })",
+      "PowerShell(Get-Command *)",
+      "PowerShell(pip install *)",
+      "PowerShell(Stop-Process *)",
+      "PowerShell($proc = Start-Process python -ArgumentList \"-m\",\"http.server\",\"8765\" -WorkingDirectory \"C:\\\\Users\\\\JW\\\\부동산분석\" -PassThru -WindowStyle Hidden; Start-Sleep 2; \\(Invoke-WebRequest \"http://localhost:8765/apt_dashboard.html\" -UseBasicParsing -TimeoutSec 5\\).StatusCode; \"PID=$\\($proc.Id\\)\")",
+      "PowerShell(Test-Path *)",
+      "PowerShell(winget install *)",
+      "PowerShell(git *)",
+      "PowerShell($env:PATH += \";C:\\\\Program Files\\\\Git\\\\cmd\"; cd \"C:\\\\Users\\\\JW\\\\부동산분석\"; git log --oneline)",
+      "PowerShell(New-Item *)"
+    ]
+  }
+}
