@@ -1171,8 +1171,11 @@
   .yh-meta-item { display:flex; flex-direction:column; gap:2px; }
   .yh-meta-lbl { font-size:10px; font-weight:700; color:#aaa; text-transform:uppercase; letter-spacing:.05em; }
   .yh-meta-val { font-size:13px; font-weight:700; color:#444; }
-  .yh-notice-link { display:block; padding:10px 18px; background:#f8f5ff; border-top:1px solid #ece4ff; font-size:12px; font-weight:700; color:#6d3aff; text-decoration:none; transition:background .15s; }
+  .yh-notice-actions { display:flex; border-top:1px solid #ece4ff; }
+  .yh-notice-link { flex:1; padding:10px 14px; background:#f8f5ff; font-size:12px; font-weight:700; color:#6d3aff; text-decoration:none; transition:background .15s; text-align:center; }
   .yh-notice-link:hover { background:#ede5ff; }
+  .yh-notice-pdf-btn { flex:1; padding:10px 14px; background:#fff5f0; border-left:1px solid #ece4ff; font-size:12px; font-weight:700; color:#d94f00; text-decoration:none; transition:background .15s; text-align:center; }
+  .yh-notice-pdf-btn:hover { background:#ffe8df; }
   .yh-type-badge { display:inline-flex; align-items:center; font-size:10px; font-weight:700; padding:2px 8px; border-radius:4px; letter-spacing:.04em; }
   .yh-type-public  { background:#e6fff6; color:#00875a; }
   .yh-type-private { background:#fff4eb; color:#e07000; }
@@ -2775,12 +2778,12 @@ function renderGyeonggi() {
 
 /* ═══════════════════════ 청년안심주택 DATA ═══════════════════════ */
 const YOUTH_NOTICES_STATIC = [
-  { name:"2026년 1차 청년안심주택(공공임대)", type:"공공임대", date:"2026-03-31", announce:"2026-08-12", status:"모집마감", units:573,  url:"https://soco.seoul.go.kr/youth/bbs/BMSR00015/view.do?boardId=6485&menuNo=400008" },
-  { name:"화랑대역 에이트플레이스(민간임대)", type:"민간임대", date:"2026-05-26", announce:"2026-07-31", status:"모집예정", units:null,  url:"https://soco.seoul.go.kr/youth/bbs/BMSR00015/view.do?boardId=6490&menuNo=400008" },
-  { name:"2025년 3차 청년안심주택(공공임대)", type:"공공임대", date:"2025-12-30", announce:"2026-05-15", status:"모집마감", units:322,  url:"https://soco.seoul.go.kr/youth/bbs/BMSR00015/view.do?boardId=6300&menuNo=400008" },
-  { name:"2025년 2차 청년안심주택(공공임대)", type:"공공임대", date:"2025-08-20", announce:"2025-12-10", status:"모집마감", units:412,  url:"https://soco.seoul.go.kr/youth/bbs/BMSR00015/view.do?boardId=6214&menuNo=400008" },
-  { name:"역촌역 청년안심주택(민간임대)",     type:"민간임대", date:"2025-06-10", announce:"2025-08-20", status:"모집마감", units:98,   url:"https://soco.seoul.go.kr/youth/bbs/BMSR00015/view.do?boardId=6100&menuNo=400008" },
-  { name:"2025년 1차 청년안심주택(공공임대)", type:"공공임대", date:"2025-03-28", announce:"2025-07-30", status:"모집마감", units:524,  url:"https://soco.seoul.go.kr/youth/bbs/BMSR00015/view.do?boardId=6401&menuNo=400008" },
+  { name:"2026년 1차 청년안심주택(공공임대)", type:"공공임대", date:"2026-03-31", announce:"2026-08-12", status:"모집마감", units:573,  url:"https://soco.seoul.go.kr/youth/bbs/BMSR00015/view.do?boardId=6485&menuNo=400008", pdf_url:"https://soco.seoul.go.kr/coHouse/cmmn/file/fileDown.do?atchFileId=b64a4e268a1c44aa8e1f69ae3fe7ddbc&fileSn=1" },
+  { name:"화랑대역 에이트플레이스(민간임대)", type:"민간임대", date:"2026-05-26", announce:"2026-07-31", status:"모집예정", units:null,  url:"https://soco.seoul.go.kr/youth/bbs/BMSR00015/view.do?boardId=6490&menuNo=400008", pdf_url:null },
+  { name:"2025년 3차 청년안심주택(공공임대)", type:"공공임대", date:"2025-12-30", announce:"2026-05-15", status:"모집마감", units:322,  url:"https://soco.seoul.go.kr/youth/bbs/BMSR00015/view.do?boardId=6300&menuNo=400008", pdf_url:null },
+  { name:"2025년 2차 청년안심주택(공공임대)", type:"공공임대", date:"2025-08-20", announce:"2025-12-10", status:"모집마감", units:412,  url:"https://soco.seoul.go.kr/youth/bbs/BMSR00015/view.do?boardId=6214&menuNo=400008", pdf_url:null },
+  { name:"역촌역 청년안심주택(민간임대)",     type:"민간임대", date:"2025-06-10", announce:"2025-08-20", status:"모집마감", units:98,   url:"https://soco.seoul.go.kr/youth/bbs/BMSR00015/view.do?boardId=6100&menuNo=400008", pdf_url:null },
+  { name:"2025년 1차 청년안심주택(공공임대)", type:"공공임대", date:"2025-03-28", announce:"2025-07-30", status:"모집마감", units:524,  url:"https://soco.seoul.go.kr/youth/bbs/BMSR00015/view.do?boardId=6401&menuNo=400008", pdf_url:null },
 ];
 let YOUTH_NOTICES = [...YOUTH_NOTICES_STATIC];
 
@@ -2838,7 +2841,10 @@ function renderYHNotices(filter) {
           ${unitsHtml}
         </div>
       </div>
-      <a href="${n.url}" target="_blank" class="yh-notice-link">공고문 보기 →</a>
+      <div class="yh-notice-actions">
+        <a href="${n.url}" target="_blank" class="yh-notice-link">공고문 보기 →</a>
+        ${n.pdf_url ? `<a href="${n.pdf_url}" target="_blank" class="yh-notice-pdf-btn">PDF 다운로드 ↓</a>` : ""}
+      </div>
     </div>`;
   }).join("");
 }
