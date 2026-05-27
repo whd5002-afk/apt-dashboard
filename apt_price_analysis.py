@@ -13,6 +13,7 @@ import io
 import json
 import time
 from datetime import datetime, timedelta
+from urllib.parse import urlencode
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -104,18 +105,31 @@ CONVERSION_RATE = 0.06  # 연 6% 전월세 전환율
 
 
 def make_session():
-    """세션 초기화 — 브라우저 헤더로 WMONID/JSESSIONID 쿠키 획득"""
+    """세션 초기화 — 브라우저 헤더로 WMONID/JSESSIONID 쿠키 획득. 실패 시 None 반환"""
     session = requests.Session()
-    session.get(BASE_URL + "/pt/xls/xls.do", headers=HEADERS_GET, timeout=15, verify=False)
+    session.verify = False
+    try:
+        session.get(BASE_URL + "/pt/xls/xls.do", headers=HEADERS_GET, timeout=15, verify=False)
+    except Exception:
+        return None
     return session
 
 
+def download_csv_urllib3(params):
+    """urllib3 직접 사용 — requests SSL 핑거프린트 차단 우회용 폴백"""
+    http = urllib3.PoolManager(cert_reqs='CERT_NONE', assert_hostname=False)
+    body = urlencode(params).encode('utf-8')
+    headers = {**HEADERS_POST, 'Content-Type': 'application/x-www-form-urlencoded'}
+    response = http.request('POST', DOWNLOAD_URL, body=body, headers=headers)
+    return response.data.decode('euc-kr', errors='replace')
+
+
 def download_csv(session, sido_cd, from_dt, to_dt):
-    """CSV 파일 다운로드 → EUC-KR 디코딩 후 텍스트 반환"""
+    """CSV 파일 다운로드 → EUC-KR 디코딩 후 텍스트 반환. requests 실패 시 urllib3 폴백"""
     params = {
-        "srhThingNo":    "A",   # 아파트
-        "srhDelngSecd":  "1",   # 매매
-        "srhAddrGbn":    "1",   # 지번주소
+        "srhThingNo":    "A",
+        "srhDelngSecd":  "1",
+        "srhAddrGbn":    "1",
         "srhLfstsSecd":  "1",
         "srhNewRonSecd": "",
         "srhSidoCd":     sido_cd,
@@ -138,9 +152,14 @@ def download_csv(session, sido_cd, from_dt, to_dt):
         "areaNm":        "",
         "hsmpNm":        "",
     }
-    resp = session.post(DOWNLOAD_URL, data=params, headers=HEADERS_POST, timeout=120, verify=False)
-    resp.raise_for_status()
-    return resp.content.decode("euc-kr", errors="replace")
+    if session is not None:
+        try:
+            resp = session.post(DOWNLOAD_URL, data=params, headers=HEADERS_POST, timeout=120, verify=False)
+            resp.raise_for_status()
+            return resp.content.decode("euc-kr", errors="replace")
+        except Exception:
+            pass
+    return download_csv_urllib3(params)
 
 
 def parse_csv(text, city_filter=None):
@@ -200,7 +219,7 @@ def parse_csv(text, city_filter=None):
 
 
 def download_rent_csv(session, sido_cd, from_dt, to_dt):
-    """아파트 전월세 CSV 다운로드 — srhDelngSecd 자동 감지 ("3" 실패 시 "2" 재시도)"""
+    """아파트 전월세 CSV 다운로드 — srhDelngSecd 자동 감지 ("3" 실패 시 "2" 재시도). requests 실패 시 urllib3 폴백"""
     base_params = {
         "srhThingNo": "A", "srhAddrGbn": "1",
         "srhLfstsSecd": "", "srhNewRonSecd": "",
@@ -216,15 +235,21 @@ def download_rent_csv(session, sido_cd, from_dt, to_dt):
     last_text, last_code = "", "3"
     for code in ["3", "2"]:
         params = {**base_params, "srhDelngSecd": code}
-        resp = session.post(DOWNLOAD_URL, data=params, headers=HEADERS_POST, timeout=120, verify=False)
-        resp.raise_for_status()
-        text = resp.content.decode("euc-kr", errors="replace")
+        if session is not None:
+            try:
+                resp = session.post(DOWNLOAD_URL, data=params, headers=HEADERS_POST, timeout=120, verify=False)
+                resp.raise_for_status()
+                text = resp.content.decode("euc-kr", errors="replace")
+            except Exception:
+                text = download_csv_urllib3(params)
+        else:
+            text = download_csv_urllib3(params)
         lines = text.splitlines()
         header_idx = next((i for i, l in enumerate(lines) if l.strip().startswith('"NO"')), None)
         last_text, last_code = text, code
         if header_idx is not None:
-            return text, code  # 헤더 발견 → 성공
-    return last_text, last_code  # 마지막 시도 결과 반환
+            return text, code
+    return last_text, last_code
 
 
 def parse_rent_csv(text, gu_filter):
