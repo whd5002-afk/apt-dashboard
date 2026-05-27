@@ -415,16 +415,21 @@ def calc_stats(amounts):
 
 
 def collect_youth_housing():
-    """housing.seoul.go.kr에서 청년안심주택 공고 목록 크롤링"""
+    """housing.seoul.go.kr 공고 목록 + i-sh.co.kr 상세 페이지 PDF 링크 크롤링"""
+    import re
     try:
         from bs4 import BeautifulSoup
     except ImportError:
-        print("  [청년안심주택] beautifulsoup4 미설치 — 크롤링 건너뜀 (pip install beautifulsoup4)")
+        print("  [청년안심주택] beautifulsoup4 미설치 — 건너뜀 (pip install beautifulsoup4)")
         return []
 
+    ISHS = "https://www.i-sh.co.kr"
     notices = []
     try:
         http = urllib3.PoolManager(cert_reqs='CERT_NONE', assert_hostname=False)
+
+        # ── 1. 공고 목록 수집 ──
+        empty_streak = 0
         for page in range(1, 9):
             url = f"https://housing.seoul.go.kr/site/main/sh/publicLease/list?cp={page}"
             resp = http.request('GET', url, headers={"User-Agent": UA}, timeout=15)
@@ -432,40 +437,51 @@ def collect_youth_housing():
             rows = soup.select('table tbody tr')
             if not rows:
                 break
+            found_on_page = 0
             for row in rows:
                 cells = row.select('td')
-                if len(cells) < 5:
+                if len(cells) < 5 or '청년안심주택' not in cells[1].get_text(strip=True):
                     continue
-                cheong_type = cells[1].get_text(strip=True)
-                if '청년안심주택' not in cheong_type:
-                    continue
-                name_cell = cells[2]
-                name = name_cell.get_text(strip=True)
-                link_tag = name_cell.select_one('a')
-                href = link_tag.get('href', '') if link_tag else ''
-                if href and not href.startswith('http'):
-                    href = 'https://housing.seoul.go.kr' + href
-                if not href:
-                    href = "https://housing.seoul.go.kr/site/main/sh/publicLease/list"
-                pub_date    = cells[3].get_text(strip=True) if len(cells) > 3 else ''
-                announce    = cells[4].get_text(strip=True) if len(cells) > 4 else ''
-                status_raw  = cells[5].get_text(strip=True) if len(cells) > 5 else ''
-                status = "모집중" if "모집중" in status_raw else "모집마감"
-                # 민간/공공 구분
-                housing_type = "민간임대" if "민간" in name else "공공임대"
+                found_on_page += 1
+                name = cells[2].get_text(strip=True)
+                # 링크는 cells[2]가 아닌 뒷 셀의 "공고문 보기" 버튼에 있음
+                link_tag = row.select_one('a[href^="https://www.i-sh.co.kr"]')
+                detail_url = link_tag['href'] if link_tag else ''
+                pub_date   = cells[3].get_text(strip=True) if len(cells) > 3 else ''
+                announce   = cells[4].get_text(strip=True) if len(cells) > 4 else ''
+                status_raw = cells[5].get_text(strip=True) if len(cells) > 5 else ''
+                status     = "모집중" if "모집중" in status_raw else "모집마감"
+                htype      = "민간임대" if "민간" in name else "공공임대"
                 notices.append({
-                    "name":     name,
-                    "type":     housing_type,
-                    "date":     pub_date,
-                    "announce": announce,
-                    "status":   status,
-                    "units":    None,
-                    "url":      href,
+                    "name": name, "type": htype, "date": pub_date, "announce": announce,
+                    "status": status, "units": None, "url": detail_url, "pdf_url": None,
                 })
+            empty_streak = 0 if found_on_page > 0 else empty_streak + 1
+            if empty_streak >= 2:
+                break
             time.sleep(0.5)
-        print(f"  [청년안심주택] 크롤링 완료: {len(notices)}건")
+
+        # ── 2. 상세 페이지에서 PDF 링크 추출 ──
+        for n in notices:
+            if not n['url']:
+                continue
+            try:
+                r2 = http.request('GET', n['url'], headers={"User-Agent": UA}, timeout=10)
+                s2 = BeautifulSoup(r2.data.decode('utf-8', errors='replace'), 'html.parser')
+                # href에 fileDown 또는 .pdf 포함 링크 탐색
+                for a in s2.find_all('a', href=True):
+                    h = a['href']
+                    if 'fileDown' in h or '.pdf' in h.lower():
+                        n['pdf_url'] = h if h.startswith('http') else ISHS + h
+                        break
+                time.sleep(0.4)
+            except Exception:
+                pass
+
+        pdf_cnt = sum(1 for n in notices if n['pdf_url'])
+        print(f"  [청년안심주택] {len(notices)}건 수집, PDF {pdf_cnt}건 파싱")
     except Exception as e:
-        print(f"  [청년안심주택] 크롤링 오류: {e}")
+        print(f"  [청년안심주택] 오류: {e}")
     return notices
 
 
