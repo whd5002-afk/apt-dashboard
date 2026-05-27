@@ -4,10 +4,17 @@
     "url": "https://rt.molit.go.kr",
     "period_from": "2025-11-01",
     "period_to": "2026-04-30",
-    "downloaded_at": "2026-05-28T00:16:31",
+    "downloaded_at": "2026-05-28T01:02:24",
     "unit": "만원"
   },
   "summary": {
+    "부산": {
+      "count": 19215,
+      "avg": 44028.6,
+      "median": 37000.0,
+      "min": 1500,
+      "max": 570000
+    },
     "대구": {
       "count": 14267,
       "avg": 40359.9,
@@ -21,13 +28,6 @@
       "median": 26700.0,
       "min": 2613,
       "max": 195000
-    },
-    "대전": {
-      "count": 9040,
-      "avg": 37320.2,
-      "median": 34500.0,
-      "min": 1900,
-      "max": 290000
     },
     "울산": {
       "count": 7853,
@@ -298,5 +298,37 @@
       }
     }
   },
-  "rent_updated": "2026-05-28T00:16:32"
+  "rent_updated": "2026-05-28T01:02:25",
+  "youth_housing": [
+    {
+      "name": "2025년 3차 청년안심주택(2025.12.30.공고) 당첨자 및 예비자 발표",
+      "type": "공공임대",
+      "date": "2026-05-15",
+      "announce": "2026-05-15",
+      "status": "모집마감",
+      "units": null,
+      "url": "https://www.i-sh.co.kr/main/lay2/program/S1T294C295/www/brd/m_241/view.do?seq=304405",
+      "pdf_url": null
+    },
+    {
+      "name": "2026년 1차 청년안심주택 서류심사대상자 발표(2026.03.31.공고)",
+      "type": "공공임대",
+      "date": "2026-04-20",
+      "announce": "2026-08-12",
+      "status": "모집마감",
+      "units": null,
+      "url": "https://www.i-sh.co.kr/main/lay2/program/S1T294C295/www/brd/m_241/view.do?seq=303274",
+      "pdf_url": null
+    },
+    {
+      "name": "2026년 1차 청년안심주택(공공임대) 입주자 모집공고",
+      "type": "공공임대",
+      "date": "2026-03-31",
+      "announce": "2026-08-12",
+      "status": "모집마감",
+      "units": null,
+      "url": "https://www.i-sh.co.kr/main/lay2/program/S1T294C295/www/brd/m_241/view.do?seq=302646",
+      "pdf_url": null
+    }
+  ]
 }
