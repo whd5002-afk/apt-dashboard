@@ -414,7 +414,62 @@ def calc_stats(amounts):
             "min": min(amounts), "max": max(amounts)}
 
 
-def save_data_json(results, meta, filepath, rent_data=None):
+def collect_youth_housing():
+    """housing.seoul.go.kr에서 청년안심주택 공고 목록 크롤링"""
+    try:
+        from bs4 import BeautifulSoup
+    except ImportError:
+        print("  [청년안심주택] beautifulsoup4 미설치 — 크롤링 건너뜀 (pip install beautifulsoup4)")
+        return []
+
+    notices = []
+    try:
+        http = urllib3.PoolManager(cert_reqs='CERT_NONE', assert_hostname=False)
+        for page in range(1, 9):
+            url = f"https://housing.seoul.go.kr/site/main/sh/publicLease/list?cp={page}"
+            resp = http.request('GET', url, headers={"User-Agent": UA}, timeout=15)
+            soup = BeautifulSoup(resp.data.decode('utf-8', errors='replace'), 'html.parser')
+            rows = soup.select('table tbody tr')
+            if not rows:
+                break
+            for row in rows:
+                cells = row.select('td')
+                if len(cells) < 5:
+                    continue
+                cheong_type = cells[1].get_text(strip=True)
+                if '청년안심주택' not in cheong_type:
+                    continue
+                name_cell = cells[2]
+                name = name_cell.get_text(strip=True)
+                link_tag = name_cell.select_one('a')
+                href = link_tag.get('href', '') if link_tag else ''
+                if href and not href.startswith('http'):
+                    href = 'https://housing.seoul.go.kr' + href
+                if not href:
+                    href = "https://housing.seoul.go.kr/site/main/sh/publicLease/list"
+                pub_date    = cells[3].get_text(strip=True) if len(cells) > 3 else ''
+                announce    = cells[4].get_text(strip=True) if len(cells) > 4 else ''
+                status_raw  = cells[5].get_text(strip=True) if len(cells) > 5 else ''
+                status = "모집중" if "모집중" in status_raw else "모집마감"
+                # 민간/공공 구분
+                housing_type = "민간임대" if "민간" in name else "공공임대"
+                notices.append({
+                    "name":     name,
+                    "type":     housing_type,
+                    "date":     pub_date,
+                    "announce": announce,
+                    "status":   status,
+                    "units":    None,
+                    "url":      href,
+                })
+            time.sleep(0.5)
+        print(f"  [청년안심주택] 크롤링 완료: {len(notices)}건")
+    except Exception as e:
+        print(f"  [청년안심주택] 크롤링 오류: {e}")
+    return notices
+
+
+def save_data_json(results, meta, filepath, rent_data=None, youth_housing=None):
     """GitHub Pages용 경량 JSON (transactions 제외, HTML이 기대하는 영문 키)"""
     summary = {
         city: {
@@ -430,6 +485,8 @@ def save_data_json(results, meta, filepath, rent_data=None):
     if rent_data:
         output["rent"] = rent_data
         output["rent_updated"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    if youth_housing is not None:
+        output["youth_housing"] = youth_housing
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=2)
     print(f"  data.json 저장 완료: {filepath}")
@@ -544,6 +601,10 @@ def main():
     else:
         print("  전월세 데이터 없음 (파라미터 확인 필요 — srhDelngSecd 값 조정)")
 
+    # 청년안심주택 공고 크롤링
+    print("\n[청년안심주택 공고 수집]")
+    youth_housing = collect_youth_housing()
+
     # JSON 저장
     meta = {
         "source":        "국토교통부 실거래가 공개시스템",
@@ -554,7 +615,7 @@ def main():
         "unit":          "만원",
     }
     save_json(results, all_records, "apt_transactions.json")
-    save_data_json(results, meta, "data.json", rent_data)
+    save_data_json(results, meta, "data.json", rent_data, youth_housing)
 
 
 if __name__ == "__main__":
