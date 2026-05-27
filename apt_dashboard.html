@@ -2281,14 +2281,14 @@ function calcFunds() {
 
     } else if (_calcLinkedCity) {
       /* ── 연동됐으나 데이터 없음 ── */
-      rentBadge.textContent = "해당 지역 데이터 부족";
+      rentBadge.textContent = "전세가율 추산";
       rentBadge.className   = "rent-badge rent-badge-nodata";
       _showRentEstimate(rentWrap, price);
-      extraNotes.push(`💡 ${_calcLinkedCity} 전월세 실거래 데이터가 부족합니다. 분양가 기준 추산값을 표시합니다.`);
+      extraNotes.push(`💡 ${_calcLinkedCity} 실거래 데이터 수집 전입니다. 전세가율 기반 추산값을 표시합니다.`);
 
     } else {
       /* ── 독립 사용 (청약 카드 미연동) ── */
-      rentBadge.textContent = "분양가 0.3~0.4% 추산";
+      rentBadge.textContent = "전세가율 기반 추산";
       rentBadge.className   = "rent-badge rent-badge-est";
       _showRentEstimate(rentWrap, price);
       extraNotes.push(`💡 청약 단지 카드의 "자금 계산기로 연동" 버튼을 누르면 해당 구/시군구 실거래 기반 월세를 표시합니다.`);
@@ -2306,21 +2306,46 @@ function calcFunds() {
   document.getElementById("extraNote").textContent = extraNotes.join("  ");
 }
 
-/* 추산 월세 렌더 헬퍼 */
+/* 추산 월세 렌더 헬퍼 — 전세가율 기반 */
 function _showRentEstimate(wrap, price) {
-  const lo = Math.round(price * 0.003), hi = Math.round(price * 0.004);
-  const annLo = lo * 12, annHi = hi * 12;
-  const yLo = (annLo / price * 100).toFixed(1), yHi = (annHi / price * 100).toFixed(1);
+  const JEONSE_RATE = {
+    "서울 강남구": 0.50, "서울 서초구": 0.50, "서울 용산구": 0.52,
+    "서울 성동구": 0.55, "서울 동대문구": 0.58, "서울 양천구": 0.57,
+    "서울 노원구": 0.60, "서울 마포구": 0.55,
+    "부산 해운대구": 0.62, "대구 수성구": 0.60,
+    "대전 유성구": 0.63, "울산 남구": 0.65,
+    "창원 성산구": 0.65, "광주 광산구": 0.65,
+  };
+  const CONVERT_LO = 0.05, CONVERT_HI = 0.07;  // 전월세 전환율 범위
+
+  const jRate   = _calcLinkedCity ? (JEONSE_RATE[_calcLinkedCity] ?? 0.60) : 0.60;
+  const jeonse  = price * jRate;
+  const safeLo  = Math.max(Math.round(jeonse * CONVERT_LO / 12), Math.round(price * 0.002));
+  const safeHi  = Math.max(Math.round(jeonse * CONVERT_HI / 12), Math.round(price * 0.004));
+  const annLo   = safeLo * 12, annHi = safeHi * 12;
+  const yLo     = (annLo / price * 100).toFixed(1);
+  const yHi     = (annHi / price * 100).toFixed(1);
+  const region  = _calcLinkedCity || "해당 지역";
+
   wrap.innerHTML = `
-    <div class="rent-est-range">${fmtW(lo)} ~ ${fmtW(hi)}<span class="rent-est-unit">/월</span></div>
+    <div class="rent-est-range">${fmtW(safeLo)} ~ ${fmtW(safeHi)}<span class="rent-est-unit">/월</span></div>
     <div class="rent-stat-row" style="margin-top:6px;">
+      <span>추정 전세가 (전세가율 ${(jRate*100).toFixed(0)}%)</span>
+      <span class="rent-stat-val">${fmtW(Math.round(jeonse))}</span>
+    </div>
+    <div class="rent-stat-row">
+      <span>월세 추정 (전환율 ${(CONVERT_LO*100).toFixed(0)}~${(CONVERT_HI*100).toFixed(0)}%)</span>
+      <span class="rent-stat-val">${fmtW(safeLo)} ~ ${fmtW(safeHi)}/월</span>
+    </div>
+    <div class="rent-stat-row">
       <span>연간 수입 추산</span>
       <span class="rent-stat-val">${fmtW(annLo)} ~ ${fmtW(annHi)}</span>
     </div>
     <div class="rent-stat-row">
       <span>분양가 대비 수익률</span>
       <span class="rent-yield-val">연 ${yLo}~${yHi}%</span>
-    </div>`;
+    </div>
+    <div style="font-size:10px;color:#aaa;margin-top:5px;">${region} 전세가율 ${(jRate*100).toFixed(0)}% 기준 추산 · 실거래 수집 후 자동 업데이트</div>`;
 }
 
 /* ═══════════════════════ 경기권 RENDER ═══════════════════════ */

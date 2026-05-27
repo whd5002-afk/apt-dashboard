@@ -91,6 +91,17 @@ RENT_TARGETS = {
 # 면적 구간: (하한 이상, 상한 미만) ㎡
 AREA_BRACKETS = {"59": (50.0, 70.0), "84": (75.0, 95.0)}
 
+# 지역별 전세가율 (분양가 대비 전세 보증금 비율) — 전세→월세 추산용
+JEONSE_RATE = {
+    "서울 강남구": 0.50, "서울 서초구": 0.50, "서울 용산구": 0.52,
+    "서울 성동구": 0.55, "서울 동대문구": 0.58, "서울 양천구": 0.57,
+    "서울 노원구": 0.60, "서울 마포구": 0.55,
+    "부산 해운대구": 0.62, "대구 수성구": 0.60,
+    "대전 유성구": 0.63, "울산 남구": 0.65,
+    "창원 성산구": 0.65, "광주 광산구": 0.65,
+}
+CONVERSION_RATE = 0.06  # 연 6% 전월세 전환율
+
 
 def make_session():
     """세션 초기화 — 브라우저 헤더로 WMONID/JSESSIONID 쿠키 획득"""
@@ -189,26 +200,31 @@ def parse_csv(text, city_filter=None):
 
 
 def download_rent_csv(session, sido_cd, from_dt, to_dt):
-    """아파트 전월세 CSV 다운로드 (월세 건 포함)"""
-    params = {
-        "srhThingNo":    "A",   # 아파트
-        "srhDelngSecd":  "3",   # 전월세(임대) — 매매는 "1"
-        "srhAddrGbn":    "1",
-        "srhLfstsSecd":  "",
-        "srhNewRonSecd": "",
-        "srhSidoCd":     sido_cd,
+    """아파트 전월세 CSV 다운로드 — srhDelngSecd 자동 감지 ("3" 실패 시 "2" 재시도)"""
+    base_params = {
+        "srhThingNo": "A", "srhAddrGbn": "1",
+        "srhLfstsSecd": "", "srhNewRonSecd": "",
+        "srhSidoCd": sido_cd,
         "srhSggCd": "", "srhEmdCd": "", "srhRoadNm": "",
         "srhLoadCd": "", "srhHsmpCd": "",
         "srhArea": "", "srhLrArea": "",
         "srhFromAmount": "", "srhToAmount": "",
-        "srhFromDt":     from_dt,
-        "srhToDt":       to_dt,
+        "srhFromDt": from_dt, "srhToDt": to_dt,
         "mobileAt": "", "sidoNm": "", "sggNm": "",
         "emdNm": "", "loadNm": "", "areaNm": "", "hsmpNm": "",
     }
-    resp = session.post(DOWNLOAD_URL, data=params, headers=HEADERS_POST, timeout=120, verify=False)
-    resp.raise_for_status()
-    return resp.content.decode("euc-kr", errors="replace")
+    last_text, last_code = "", "3"
+    for code in ["3", "2"]:
+        params = {**base_params, "srhDelngSecd": code}
+        resp = session.post(DOWNLOAD_URL, data=params, headers=HEADERS_POST, timeout=120, verify=False)
+        resp.raise_for_status()
+        text = resp.content.decode("euc-kr", errors="replace")
+        lines = text.splitlines()
+        header_idx = next((i for i, l in enumerate(lines) if l.strip().startswith('"NO"')), None)
+        last_text, last_code = text, code
+        if header_idx is not None:
+            return text, code  # 헤더 발견 → 성공
+    return last_text, last_code  # 마지막 시도 결과 반환
 
 
 def parse_rent_csv(text, gu_filter):
@@ -235,6 +251,28 @@ def parse_rent_csv(text, gu_filter):
     return records
 
 
+def _parse_all_rent_csv(text, gu_filter):
+    """전세(월세=0) 포함 전체 임대 레코드 파싱"""
+    lines = text.splitlines()
+    header_idx = next((i for i, l in enumerate(lines) if l.strip().startswith('"NO"')), None)
+    if header_idx is None:
+        return []
+    reader = csv.DictReader(io.StringIO("\n".join(lines[header_idx:])))
+    records = []
+    for row in reader:
+        if gu_filter and gu_filter not in row.get("시군구", ""):
+            continue
+        try:
+            area = float(row.get("전용면적(㎡)", "").strip())
+            rent = float((row.get("월세(만원)", "") or "0").replace(",", "").strip())
+            dep  = float((row.get("보증금(만원)", "") or "0").replace(",", "").strip())
+        except (ValueError, AttributeError):
+            continue
+        records.append({"area": area, "rent": rent, "deposit": dep,
+                        "ym": row.get("계약년월", "").strip()})
+    return records
+
+
 def aggregate_rent(records):
     """면적 구간(59형/84형)별 월세 통계 계산"""
     buckets = {k: [] for k in AREA_BRACKETS}
@@ -253,31 +291,91 @@ def aggregate_rent(records):
             "median": round(sorted(rents)[n // 2]),
             "min":    int(min(rents)),
             "max":    int(max(rents)),
+            "source": "monthly_actual",
         }
     return result
 
 
+def _estimate_from_jeonse(jeonse_records, city):
+    """전세 거래에서 월세 추정 (전월세 전환율 적용)"""
+    rate = JEONSE_RATE.get(city, 0.60)
+    result = {}
+    for key, (lo, hi) in AREA_BRACKETS.items():
+        rents = []
+        for r in jeonse_records:
+            if lo <= r.get("area", 0) < hi and r.get("deposit", 0) > 0 and r.get("rent", 0) == 0:
+                est_monthly = r["deposit"] * CONVERSION_RATE / 12
+                if est_monthly > 0:
+                    rents.append(round(est_monthly))
+        if rents:
+            n = len(rents)
+            result[key] = {
+                "count":  n,
+                "avg":    round(sum(rents) / n),
+                "median": round(sorted(rents)[n // 2]),
+                "min":    int(min(rents)),
+                "max":    int(max(rents)),
+                "source": "jeonse_estimated",
+            }
+    return result
+
+
 def collect_rent_data(session):
-    """청약 단지 구/시군구별 최근 6개월 월세 실거래 수집"""
+    """청약 단지 구/시군구별 월세 실거래 수집 — 기간 확장 + 전세→월세 추산 폴백"""
     rent = {}
-    sido_cache = {}  # 같은 sido는 한 번만 다운로드
+    sido_cache = {}  # (sido, from_dt, to_dt) → (text, code)
+
+    # 조회 기간 목록: 최근 1개월 → 3개월 → 6개월 순으로 확대
+    today = datetime.now()
+    periods = []
+    for months in [1, 3, 6]:
+        end = today.replace(day=1) - timedelta(days=1)
+        sm = end.month - months + 1
+        sy = end.year
+        if sm <= 0:
+            sm += 12; sy -= 1
+        start = end.replace(year=sy, month=sm, day=1)
+        periods.append((start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d")))
 
     for city, cfg in RENT_TARGETS.items():
         sido, gu = cfg["sido"], cfg["gu"]
         print(f"  [전월세] {city} ...", end=" ", flush=True)
-        try:
-            if sido not in sido_cache:
-                sido_cache[sido] = download_rent_csv(session, sido, FROM_DT, TO_DT)
-                time.sleep(1)
-            records = parse_rent_csv(sido_cache[sido], gu)
-            stats   = aggregate_rent(records)
-            if stats:
-                rent[city] = stats
-                print({k: f"{v['avg']}만원({v['count']}건)" for k, v in stats.items()})
-            else:
-                print("월세 데이터 없음")
-        except Exception as e:
-            print(f"오류: {e}")
+        found = False
+
+        for from_dt, to_dt in periods:
+            cache_key = (sido, from_dt, to_dt)
+            try:
+                if cache_key not in sido_cache:
+                    sido_cache[cache_key] = download_rent_csv(session, sido, from_dt, to_dt)
+                    time.sleep(0.8)
+                text, code = sido_cache[cache_key]
+
+                # 월세 실거래 집계
+                records = parse_rent_csv(text, gu)
+                stats   = aggregate_rent(records)
+
+                # 건수 부족(<3건)이면 전세→월세 추산 보완
+                thin = all(v.get("count", 0) < 3 for v in stats.values()) if stats else True
+                if thin:
+                    all_recs = _parse_all_rent_csv(text, gu)
+                    est = _estimate_from_jeonse(all_recs, city)
+                    for k, v in est.items():
+                        if k not in stats or stats[k]["count"] < 3:
+                            stats[k] = v
+
+                if stats and any(v.get("count", 0) >= 1 for v in stats.values()):
+                    rent[city] = stats
+                    print({k: f"{v['avg']}만원({v['count']}건,{v.get('source','?')})"
+                           for k, v in stats.items()})
+                    found = True
+                    break
+
+            except Exception as e:
+                print(f"[{from_dt[:7]}오류:{e}]", end=" ")
+
+        if not found:
+            print("데이터 없음")
+
     return rent
 
 
@@ -355,7 +453,7 @@ def fmt(amount):
 
 def main():
     print("=" * 70)
-    print("  국토부 실거래가 공개시스템 — 6개 도시 아파트 매매 분석")
+    print("  국토부 실거래가 공개시스템 - 6개 도시 아파트 매매 분석")
     print(f"  기간: {FROM_DT} ~ {TO_DT}")
     print("=" * 70)
 
