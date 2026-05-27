@@ -2,53 +2,301 @@
   "meta": {
     "source": "국토교통부 실거래가 공개시스템",
     "url": "https://rt.molit.go.kr",
-    "period_from": "2025-10-01",
-    "period_to": "2026-03-31",
-    "downloaded_at": "2026-05-20T08:52:44",
+    "period_from": "2025-11-01",
+    "period_to": "2026-04-30",
+    "downloaded_at": "2026-05-28T00:16:31",
     "unit": "만원"
   },
   "summary": {
-    "부산": {
-      "count": 19667,
-      "avg": 45163.9,
-      "median": 37900.0,
-      "min": 1500,
-      "max": 570000
-    },
     "대구": {
-      "count": 14451,
-      "avg": 40528.6,
-      "median": 35000.0,
-      "min": 2450,
+      "count": 14267,
+      "avg": 40359.9,
+      "median": 34900.0,
+      "min": 2700,
       "max": 330000
     },
+    "광주": {
+      "count": 8473,
+      "avg": 30051.3,
+      "median": 26700.0,
+      "min": 2613,
+      "max": 195000
+    },
     "대전": {
-      "count": 8994,
-      "avg": 37840.6,
-      "median": 34800.0,
+      "count": 9040,
+      "avg": 37320.2,
+      "median": 34500.0,
       "min": 1900,
       "max": 290000
     },
     "울산": {
-      "count": 8071,
-      "avg": 35820.4,
+      "count": 7853,
+      "avg": 35660.9,
       "median": 32000.0,
       "min": 2200,
       "max": 180000
     },
     "창원": {
-      "count": 6606,
-      "avg": 33783.3,
-      "median": 28500.0,
+      "count": 6619,
+      "avg": 32993.9,
+      "median": 27600.0,
       "min": 2200,
-      "max": 174000
-    },
-    "광주": {
-      "count": 8285,
-      "avg": 30117.1,
-      "median": 26800.0,
-      "min": 2613,
-      "max": 195000
+      "max": 156500
     }
-  }
+  },
+  "rent": {
+    "서울 강남구": {
+      "59": {
+        "count": 244,
+        "avg": 267,
+        "median": 265,
+        "min": 5,
+        "max": 750,
+        "source": "jeonse_estimated"
+      },
+      "84": {
+        "count": 361,
+        "avg": 401,
+        "median": 390,
+        "min": 5,
+        "max": 1100,
+        "source": "jeonse_estimated"
+      }
+    },
+    "서울 서초구": {
+      "59": {
+        "count": 170,
+        "avg": 302,
+        "median": 262,
+        "min": 10,
+        "max": 850,
+        "source": "jeonse_estimated"
+      },
+      "84": {
+        "count": 317,
+        "avg": 409,
+        "median": 400,
+        "min": 2,
+        "max": 1050,
+        "source": "jeonse_estimated"
+      }
+    },
+    "서울 용산구": {
+      "59": {
+        "count": 95,
+        "avg": 238,
+        "median": 270,
+        "min": 5,
+        "max": 446,
+        "source": "jeonse_estimated"
+      },
+      "84": {
+        "count": 109,
+        "avg": 287,
+        "median": 315,
+        "min": 5,
+        "max": 750,
+        "source": "jeonse_estimated"
+      }
+    },
+    "서울 성동구": {
+      "59": {
+        "count": 306,
+        "avg": 247,
+        "median": 252,
+        "min": 5,
+        "max": 600,
+        "source": "jeonse_estimated"
+      },
+      "84": {
+        "count": 251,
+        "avg": 315,
+        "median": 325,
+        "min": 25,
+        "max": 850,
+        "source": "jeonse_estimated"
+      }
+    },
+    "서울 동대문구": {
+      "59": {
+        "count": 140,
+        "avg": 202,
+        "median": 200,
+        "min": 15,
+        "max": 390,
+        "source": "jeonse_estimated"
+      },
+      "84": {
+        "count": 139,
+        "avg": 255,
+        "median": 273,
+        "min": 25,
+        "max": 475,
+        "source": "jeonse_estimated"
+      }
+    },
+    "서울 양천구": {
+      "59": {
+        "count": 338,
+        "avg": 167,
+        "median": 180,
+        "min": 0,
+        "max": 415,
+        "source": "jeonse_estimated"
+      },
+      "84": {
+        "count": 165,
+        "avg": 281,
+        "median": 294,
+        "min": 5,
+        "max": 635,
+        "source": "jeonse_estimated"
+      }
+    },
+    "서울 노원구": {
+      "59": {
+        "count": 380,
+        "avg": 121,
+        "median": 135,
+        "min": 2,
+        "max": 310,
+        "source": "jeonse_estimated"
+      },
+      "84": {
+        "count": 194,
+        "avg": 215,
+        "median": 225,
+        "min": 15,
+        "max": 425,
+        "source": "jeonse_estimated"
+      }
+    },
+    "서울 마포구": {
+      "59": {
+        "count": 259,
+        "avg": 201,
+        "median": 194,
+        "min": 2,
+        "max": 475,
+        "source": "jeonse_estimated"
+      },
+      "84": {
+        "count": 266,
+        "avg": 308,
+        "median": 325,
+        "min": 2,
+        "max": 640,
+        "source": "jeonse_estimated"
+      }
+    },
+    "부산 해운대구": {
+      "59": {
+        "count": 222,
+        "avg": 66,
+        "median": 84,
+        "min": 2,
+        "max": 220,
+        "source": "jeonse_estimated"
+      },
+      "84": {
+        "count": 199,
+        "avg": 116,
+        "median": 130,
+        "min": 0,
+        "max": 322,
+        "source": "jeonse_estimated"
+      }
+    },
+    "대구 수성구": {
+      "59": {
+        "count": 98,
+        "avg": 40,
+        "median": 10,
+        "min": 0,
+        "max": 145,
+        "source": "jeonse_estimated"
+      },
+      "84": {
+        "count": 277,
+        "avg": 121,
+        "median": 115,
+        "min": 2,
+        "max": 425,
+        "source": "jeonse_estimated"
+      }
+    },
+    "대전 유성구": {
+      "59": {
+        "count": 143,
+        "avg": 56,
+        "median": 56,
+        "min": 4,
+        "max": 210,
+        "source": "jeonse_estimated"
+      },
+      "84": {
+        "count": 196,
+        "avg": 119,
+        "median": 130,
+        "min": 2,
+        "max": 325,
+        "source": "jeonse_estimated"
+      }
+    },
+    "울산 남구": {
+      "59": {
+        "count": 81,
+        "avg": 69,
+        "median": 75,
+        "min": 2,
+        "max": 225,
+        "source": "jeonse_estimated"
+      },
+      "84": {
+        "count": 99,
+        "avg": 127,
+        "median": 122,
+        "min": 5,
+        "max": 325,
+        "source": "jeonse_estimated"
+      }
+    },
+    "창원 성산구": {
+      "59": {
+        "count": 125,
+        "avg": 76,
+        "median": 70,
+        "min": 1,
+        "max": 250,
+        "source": "jeonse_estimated"
+      },
+      "84": {
+        "count": 84,
+        "avg": 131,
+        "median": 125,
+        "min": 2,
+        "max": 350,
+        "source": "jeonse_estimated"
+      }
+    },
+    "광주 광산구": {
+      "59": {
+        "count": 184,
+        "avg": 41,
+        "median": 38,
+        "min": 2,
+        "max": 125,
+        "source": "jeonse_estimated"
+      },
+      "84": {
+        "count": 146,
+        "avg": 100,
+        "median": 110,
+        "min": 1,
+        "max": 235,
+        "source": "jeonse_estimated"
+      }
+    }
+  },
+  "rent_updated": "2026-05-28T00:16:32"
 }
