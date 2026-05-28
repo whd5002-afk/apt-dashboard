@@ -62,43 +62,30 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         else: self.send_error(404)
 
     def _serve_data(self):
+        data_json = BASE_DIR / "data.json"
+
+        # data.json 우선 — 영문 키 + rent + youth_housing + yh_complexes 전부 포함
+        if data_json.exists():
+            with open(data_json, encoding="utf-8") as f:
+                return self._json(200, json.load(f))
+
+        # fallback: apt_transactions.json (한글 키 → 영문 변환)
         if not JSON_PATH.exists():
             return self._json(404, {"error": "no data"})
         with open(JSON_PATH, encoding="utf-8") as f:
             data = json.load(f)
-        # summary: apt_transactions.json은 한글 키, data.json은 영문 키
         raw = data.get("summary", {})
-        first_val = next(iter(raw.values()), {}) if raw else {}
-        if "거래건수" in first_val:
-            # apt_transactions.json 형식 — 키 변환
-            summary = {
-                city: {
-                    "count":  v.get("거래건수", 0),
-                    "avg":    v.get("평균가_만원", 0),
-                    "median": v.get("중위가_만원", 0),
-                    "min":    v.get("최저가_만원", 0),
-                    "max":    v.get("최고가_만원", 0),
-                }
-                for city, v in raw.items()
+        summary = {
+            city: {
+                "count":  v.get("거래건수", 0),
+                "avg":    v.get("평균가_만원", 0),
+                "median": v.get("중위가_만원", 0),
+                "min":    v.get("최저가_만원", 0),
+                "max":    v.get("최고가_만원", 0),
             }
-        else:
-            summary = raw  # data.json 형식 — 이미 영문 키
-        out = {"meta": data.get("meta", {}), "summary": summary}
-        for field in ("rent", "youth_housing", "yh_complexes"):
-            if field in data:
-                out[field] = data[field]
-        # data.json에서 추가 필드 보완 (apt_transactions.json만 있을 경우)
-        data_json = JSON_PATH.parent / "data.json"
-        if data_json.exists() and data_json != JSON_PATH:
-            try:
-                with open(data_json, encoding="utf-8") as f2:
-                    d2 = json.load(f2)
-                for field in ("rent", "youth_housing", "yh_complexes"):
-                    if field not in out and field in d2:
-                        out[field] = d2[field]
-            except Exception:
-                pass
-        self._json(200, out)
+            for city, v in raw.items()
+        }
+        self._json(200, {"meta": data.get("meta", {}), "summary": summary})
 
     def _serve_status(self):
         with _lock:
