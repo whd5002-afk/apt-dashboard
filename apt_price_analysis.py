@@ -81,6 +81,8 @@ RENT_TARGETS = {
     "서울 양천구":   {"sido": "11", "gu": "양천구"},
     "서울 노원구":   {"sido": "11", "gu": "노원구"},
     "서울 마포구":   {"sido": "11", "gu": "마포구"},
+    "서울 영등포구": {"sido": "11", "gu": "영등포구"},
+    "서울 송파구":   {"sido": "11", "gu": "송파구"},
     "부산 해운대구": {"sido": "26", "gu": "해운대구"},
     "대구 수성구":   {"sido": "27", "gu": "수성구"},
     "대전 유성구":   {"sido": "30", "gu": "유성구"},
@@ -97,6 +99,7 @@ JEONSE_RATE = {
     "서울 강남구": 0.50, "서울 서초구": 0.50, "서울 용산구": 0.52,
     "서울 성동구": 0.55, "서울 동대문구": 0.58, "서울 양천구": 0.57,
     "서울 노원구": 0.60, "서울 마포구": 0.55,
+    "서울 영등포구": 0.55, "서울 송파구": 0.52,
     "부산 해운대구": 0.62, "대구 수성구": 0.60,
     "대전 유성구": 0.63, "울산 남구": 0.65,
     "창원 성산구": 0.65, "광주 광산구": 0.65,
@@ -505,7 +508,16 @@ def collect_youth_housing():
     return notices
 
 
-def save_data_json(results, meta, filepath, rent_data=None, youth_housing=None):
+def collect_yh_complexes():
+    """SH공사 공공임대 단지별 월세 정보 — housing.seoul.go.kr는 SPA라 정적 데이터 반환"""
+    return [
+        {"name": "용산 베르디움 프렌즈", "gu": "용산구",  "type": "공공임대",       "monthly": 9,  "units": 450, "src": "SH공사 공공임대", "deposit": "5,000만원"},
+        {"name": "한화 포레나 당산",     "gu": "영등포구", "type": "공공임대",       "monthly": 12, "units": 520, "src": "SH공사 공공임대", "deposit": "6,000만원"},
+        {"name": "잠실 엘타워",         "gu": "송파구",   "type": "공공지원민간임대", "monthly": 23, "units": 586, "src": "SH공사 민간임대", "deposit": "1억"},
+    ]
+
+
+def save_data_json(results, meta, filepath, rent_data=None, youth_housing=None, yh_complexes=None):
     """GitHub Pages용 경량 JSON (transactions 제외, HTML이 기대하는 영문 키)"""
     summary = {
         city: {
@@ -523,6 +535,8 @@ def save_data_json(results, meta, filepath, rent_data=None, youth_housing=None):
         output["rent_updated"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     if youth_housing is not None:
         output["youth_housing"] = youth_housing
+    if yh_complexes is not None:
+        output["yh_complexes"] = yh_complexes
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=2)
     print(f"  data.json 저장 완료: {filepath}")
@@ -641,6 +655,9 @@ def main():
     print("\n[청년안심주택 공고 수집]")
     youth_housing = collect_youth_housing()
 
+    # 단지별 월세 정보
+    yh_complexes = collect_yh_complexes()
+
     # JSON 저장
     meta = {
         "source":        "국토교통부 실거래가 공개시스템",
@@ -651,7 +668,7 @@ def main():
         "unit":          "만원",
     }
     save_json(results, all_records, "apt_transactions.json")
-    save_data_json(results, meta, "data.json", rent_data, youth_housing)
+    save_data_json(results, meta, "data.json", rent_data, youth_housing, yh_complexes)
 
 
 if __name__ == "__main__":

@@ -66,19 +66,39 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._json(404, {"error": "no data"})
         with open(JSON_PATH, encoding="utf-8") as f:
             data = json.load(f)
-        # JSON 키를 HTML이 기대하는 형식으로 변환
+        # summary: apt_transactions.json은 한글 키, data.json은 영문 키
         raw = data.get("summary", {})
-        summary = {
-            city: {
-                "count":  v.get("거래건수", 0),
-                "avg":    v.get("평균가_만원", 0),
-                "median": v.get("중위가_만원", 0),
-                "min":    v.get("최저가_만원", 0),
-                "max":    v.get("최고가_만원", 0),
+        first_val = next(iter(raw.values()), {}) if raw else {}
+        if "거래건수" in first_val:
+            # apt_transactions.json 형식 — 키 변환
+            summary = {
+                city: {
+                    "count":  v.get("거래건수", 0),
+                    "avg":    v.get("평균가_만원", 0),
+                    "median": v.get("중위가_만원", 0),
+                    "min":    v.get("최저가_만원", 0),
+                    "max":    v.get("최고가_만원", 0),
+                }
+                for city, v in raw.items()
             }
-            for city, v in raw.items()
-        }
-        self._json(200, {"meta": data.get("meta", {}), "summary": summary})
+        else:
+            summary = raw  # data.json 형식 — 이미 영문 키
+        out = {"meta": data.get("meta", {}), "summary": summary}
+        for field in ("rent", "youth_housing", "yh_complexes"):
+            if field in data:
+                out[field] = data[field]
+        # data.json에서 추가 필드 보완 (apt_transactions.json만 있을 경우)
+        data_json = JSON_PATH.parent / "data.json"
+        if data_json.exists() and data_json != JSON_PATH:
+            try:
+                with open(data_json, encoding="utf-8") as f2:
+                    d2 = json.load(f2)
+                for field in ("rent", "youth_housing", "yh_complexes"):
+                    if field not in out and field in d2:
+                        out[field] = d2[field]
+            except Exception:
+                pass
+        self._json(200, out)
 
     def _serve_status(self):
         with _lock:
