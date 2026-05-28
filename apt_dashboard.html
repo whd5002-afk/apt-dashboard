@@ -1472,6 +1472,7 @@ function renderDynamic() {
   const cityGrid = document.getElementById("cityGrid");
   ORDER.forEach((city, idx) => {
     const s = SUMMARY[city], st = STYLE[city];
+    if (!s) return;
     const el = document.createElement("div");
     el.className = "city-card";
     el.innerHTML = `
@@ -2943,7 +2944,7 @@ function calcYH() {
   document.getElementById("yhResInterestSub").textContent = loanAmt > 0 ? `대출 ${fmt(loanAmt)} × ${(prod.rate*100).toFixed(1)}% / 12` : "이자 없음";
   document.getElementById("yhResTotal").textContent    = total > 0 ? fmt(total) : "—";
 
-  const compRent = (RENT_DATA[`서울 ${_yhComp === "강남" ? "강남구" : _yhComp === "마포" ? "마포구" : "노원구"}"]?.["59"]?.avg) || YH_COMP_RENT[_yhComp];
+  const compRent = (RENT_DATA[`서울 ${_yhComp === "강남" ? "강남구" : _yhComp === "마포" ? "마포구" : "노원구"}`]?.["59"]?.avg) || YH_COMP_RENT[_yhComp];
   document.getElementById("yhRefRent").textContent = `월 ${Math.round(compRent).toLocaleString()}만원`;
   document.getElementById("yhMyRent").textContent  = total > 0 ? `월 ${total.toLocaleString()}만원` : "—";
   const saved = total > 0 ? Math.round(compRent) - total : 0;

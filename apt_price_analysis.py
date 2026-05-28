@@ -115,17 +115,21 @@ def make_session():
     return session
 
 
+_RETRY_DELAYS = [5, 15, 30]  # 재시도 간격(초): 1차→2차→3차
+
+
 def download_csv_urllib3(params):
-    """urllib3 직접 사용 — requests SSL 핑거프린트 차단 우회용 폴백"""
-    http = urllib3.PoolManager(cert_reqs='CERT_NONE', assert_hostname=False)
+    """urllib3 직접 사용 — requests SSL 핑거프린트 차단 우회용 폴백. 매 호출마다 새 PoolManager 생성."""
     body = urlencode(params).encode('utf-8')
     headers = {**HEADERS_POST, 'Content-Type': 'application/x-www-form-urlencoded'}
+    http = urllib3.PoolManager(cert_reqs='CERT_NONE', assert_hostname=False)
     response = http.request('POST', DOWNLOAD_URL, body=body, headers=headers)
     return response.data.decode('euc-kr', errors='replace')
 
 
 def download_csv(session, sido_cd, from_dt, to_dt):
-    """CSV 파일 다운로드 → EUC-KR 디코딩 후 텍스트 반환. requests 실패 시 urllib3 폴백"""
+    """CSV 파일 다운로드 → EUC-KR 디코딩 후 텍스트 반환.
+    requests → urllib3 순으로 시도, 연결 실패 시 최대 3회 재시도(지수 백오프)."""
     params = {
         "srhThingNo":    "A",
         "srhDelngSecd":  "1",
@@ -152,14 +156,30 @@ def download_csv(session, sido_cd, from_dt, to_dt):
         "areaNm":        "",
         "hsmpNm":        "",
     }
-    if session is not None:
+    last_err = None
+    for attempt in range(len(_RETRY_DELAYS) + 1):
+        if attempt > 0:
+            delay = _RETRY_DELAYS[attempt - 1]
+            print(f" [재시도 {attempt}/{len(_RETRY_DELAYS)}, {delay}초 대기]", end=" ", flush=True)
+            time.sleep(delay)
+
+        # 1) requests 세션
+        if session is not None:
+            try:
+                resp = session.post(DOWNLOAD_URL, data=params, headers=HEADERS_POST,
+                                    timeout=120, verify=False)
+                resp.raise_for_status()
+                return resp.content.decode("euc-kr", errors="replace")
+            except Exception as e:
+                last_err = e
+
+        # 2) urllib3 폴백 (새 PoolManager로 재연결)
         try:
-            resp = session.post(DOWNLOAD_URL, data=params, headers=HEADERS_POST, timeout=120, verify=False)
-            resp.raise_for_status()
-            return resp.content.decode("euc-kr", errors="replace")
-        except Exception:
-            pass
-    return download_csv_urllib3(params)
+            return download_csv_urllib3(params)
+        except Exception as e:
+            last_err = e
+
+    raise RuntimeError(f"다운로드 실패 ({len(_RETRY_DELAYS)}회 재시도 후): {last_err}")
 
 
 def parse_csv(text, city_filter=None):
@@ -572,8 +592,8 @@ def main():
             else:
                 print("데이터 없음")
         except Exception as e:
-            print(f"오류: {e}")
-        time.sleep(1)  # 서버 부하 방지
+            print(f"최종 실패: {e}")
+        time.sleep(1)
 
     if not results:
         print("\n수집된 데이터가 없습니다.")
