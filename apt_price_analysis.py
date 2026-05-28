@@ -509,12 +509,44 @@ def collect_youth_housing():
 
 
 def collect_yh_complexes():
-    """SH공사 공공임대 단지별 월세 정보 — housing.seoul.go.kr는 SPA라 정적 데이터 반환"""
-    return [
-        {"name": "용산 베르디움 프렌즈", "gu": "용산구",  "type": "공공임대",       "monthly": 9,  "units": 450, "src": "SH공사 공공임대", "deposit": "5,000만원"},
-        {"name": "한화 포레나 당산",     "gu": "영등포구", "type": "공공임대",       "monthly": 12, "units": 520, "src": "SH공사 공공임대", "deposit": "6,000만원"},
-        {"name": "잠실 엘타워",         "gu": "송파구",   "type": "공공지원민간임대", "monthly": 23, "units": 586, "src": "SH공사 민간임대", "deposit": "1억"},
-    ]
+    """soco.seoul.go.kr API로 청년안심주택 전체 단지 실시간 임대료 수집"""
+    try:
+        http = urllib3.PoolManager(cert_reqs='CERT_NONE', assert_hostname=False)
+        url = 'https://soco.seoul.go.kr/youth/pgm/home/yohome/yoHomeListJson.json'
+        body = urlencode({'pageNum': 1, 'rowCount': 200}).encode('utf-8')
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'User-Agent': UA,
+            'X-Requested-With': 'XMLHttpRequest',
+            'Referer': 'https://soco.seoul.go.kr/youth/pgm/home/yohome/list.do',
+        }
+        resp = http.request('POST', url, body=body, headers=headers, timeout=20)
+        data = json.loads(resp.data.decode('utf-8'))
+        raw = data.get('resultList', [])
+        complexes = []
+        for h in raw:
+            yr = h.get('youthRentFee')
+            yd = h.get('youthDeposit')
+            mc = h.get('youthMaintenanceFee')
+            complexes.append({
+                'name':        h.get('homeName', ''),
+                'gu':          h.get('adresGu', ''),
+                'homeCode':    h.get('homeCode', ''),
+                'subway':      h.get('optionSubway', ''),
+                'fnRentalLow': h.get('fnMoneyRentalLow', ''),
+                'fnRentalHigh':h.get('fnMoneyRentalHigh', ''),
+                'rentalLow':   h.get('moneyRentalLow'),
+                'youthRentFee':int(yr) if yr else None,
+                'youthDeposit':int(yd) if yd else None,
+                'youthMC':     int(mc) if mc else None,
+                'hasVacancy':  h.get('silYn') == 'Y',
+                'src':         'soco.seoul.go.kr',
+            })
+        print(f'  [단지별 월세] {len(complexes)}개 단지 수집 완료')
+        return complexes
+    except Exception as e:
+        print(f'  [단지별 월세] 오류: {e}')
+        return []
 
 
 def save_data_json(results, meta, filepath, rent_data=None, youth_housing=None, yh_complexes=None):
