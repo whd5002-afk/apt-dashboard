@@ -11,17 +11,22 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: 배포 파일 준비
+        run: |
+          mkdir _deploy
+          cp apt_dashboard.html _deploy/
+          [ -f data.json ] && cp data.json _deploy/ || true
+
       - name: gh-pages 브랜치에 배포
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .
+          publish_dir: _deploy
           publish_branch: gh-pages
-          include_files: |
-            apt_dashboard.html
-            data.json
