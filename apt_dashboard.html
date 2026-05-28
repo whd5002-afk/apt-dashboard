@@ -924,11 +924,21 @@
 
 <!-- 섹션 3-2: 주요 단지별 월세 현황 -->
 <section class="section">
-  <div class="section-title">주요 단지별 월세 현황</div>
-  <div class="section-desc">SH공사 공공임대 주요 단지 실제 월세 · 주변 시세 59형 기준 비교</div>
+  <div class="section-title">단지별 월세 현황</div>
+  <div class="section-desc" id="yhCxDesc">soco.seoul.go.kr 실시간 연동 · 청년 기준 월세 오름차순 · 주변 시세 59형 비교</div>
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;" id="yhCxFilterRow">
+    <button class="cq-filter-btn active" data-gu="all"   onclick="filterYHCx('all')">전체</button>
+    <button class="cq-filter-btn" data-gu="용산구"       onclick="filterYHCx('용산구')">용산구</button>
+    <button class="cq-filter-btn" data-gu="영등포구"     onclick="filterYHCx('영등포구')">영등포구</button>
+    <button class="cq-filter-btn" data-gu="송파구"       onclick="filterYHCx('송파구')">송파구</button>
+    <button class="cq-filter-btn" data-gu="강남구"       onclick="filterYHCx('강남구')">강남구</button>
+    <button class="cq-filter-btn" data-gu="서초구"       onclick="filterYHCx('서초구')">서초구</button>
+    <button class="cq-filter-btn" data-gu="노원구"       onclick="filterYHCx('노원구')">노원구</button>
+    <button class="cq-filter-btn" data-gu="마포구"       onclick="filterYHCx('마포구')">마포구</button>
+  </div>
   <div class="yh-complex-grid" id="yhComplexGrid"></div>
   <div style="font-size:11px;color:#aaa;margin-top:10px;line-height:1.6;">
-    ※ 월세는 특정 층·타입 기준 공개 정보이며 단지별·세대별 차이 있음. 주변 시세는 59㎡ 전월세 실거래 추산.
+    ※ 출처: soco.seoul.go.kr (서울특별시 청년안심주택 포털) · 청년 기준 월세/보증금은 소득 구간별 차이 있음 · 주변 시세는 59㎡ 전월세 실거래 추산.
   </div>
 </section>
 
@@ -1831,6 +1841,8 @@ async function loadData() {
     }
     if (data.yh_complexes && data.yh_complexes.length > 0) {
       YH_COMPLEXES = data.yh_complexes;
+      const desc = document.getElementById("yhCxDesc");
+      if (desc) desc.textContent = `soco.seoul.go.kr 실시간 연동 · 전체 ${data.yh_complexes.length}개 단지 · 청년 기준 월세 오름차순 · 주변 시세 59형 비교`;
     }
     if (data.youth_housing || data.yh_complexes) {
       renderYouthHousing();
@@ -2823,12 +2835,9 @@ const YOUTH_NOTICES_STATIC = [
 ];
 let YOUTH_NOTICES = [...YOUTH_NOTICES_STATIC];
 
-const YH_COMPLEXES_STATIC = [
-  { name:"용산 베르디움 프렌즈", gu:"용산구",   type:"공공임대",       monthly:9,  units:450, src:"SH공사 공공임대", deposit:"5,000만원" },
-  { name:"한화 포레나 당산",     gu:"영등포구",  type:"공공임대",       monthly:12, units:520, src:"SH공사 공공임대", deposit:"6,000만원" },
-  { name:"잠실 엘타워",         gu:"송파구",    type:"공공지원민간임대", monthly:23, units:586, src:"SH공사 민간임대", deposit:"1억" },
-];
-let YH_COMPLEXES = [...YH_COMPLEXES_STATIC];
+/* soco API: { name, gu, homeCode, subway, fnRentalLow, fnRentalHigh, rentalLow, youthRentFee(원), youthDeposit(원), hasVacancy, src } */
+const YH_COMPLEXES_STATIC = [];
+let YH_COMPLEXES = [];
 
 const YOUTH_RENT_TABLE = [
   { size:"16~26㎡", type:"공공임대",     tag:"public",  ratio:"시세 30%",    deposit:"3,000~7,000만원",   monthly:"10~25만원",  avg:17 },
@@ -2998,48 +3007,91 @@ function calcYH() {
 }
 
 /* ── 단지별 월세 카드 렌더 ── */
+let _yhcxFilter = "all";
+function filterYHCx(gu) {
+  _yhcxFilter = gu;
+  document.querySelectorAll("#yhCxFilterRow .cq-filter-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.gu === gu));
+  renderYHComplexes();
+}
+
 function renderYHComplexes() {
-  const FALLBACK_RENT = { "용산구": 200, "영등포구": 100, "송파구": 170 };
   const grid = document.getElementById("yhComplexGrid");
   if (!grid) return;
-  grid.innerHTML = YH_COMPLEXES.map(cx => {
+  if (!YH_COMPLEXES.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;padding:32px;text-align:center;color:#aaa;font-size:13px;">데이터 로딩 중… 서버 새로고침 후 확인하세요.</div>`;
+    return;
+  }
+
+  let list = _yhcxFilter === "all" ? YH_COMPLEXES : YH_COMPLEXES.filter(c => c.gu === _yhcxFilter);
+
+  /* 청년 월세 오름차순 정렬 (null은 뒤로) */
+  list = [...list].sort((a, b) => {
+    if (a.youthRentFee == null && b.youthRentFee == null) return (a.rentalLow||0) - (b.rentalLow||0);
+    if (a.youthRentFee == null) return 1;
+    if (b.youthRentFee == null) return -1;
+    return a.youthRentFee - b.youthRentFee;
+  });
+
+  const FALLBACK_MKT = { "용산구": 200, "영등포구": 100, "송파구": 170, "노원구": 121, "마포구": 201, "강남구": 267, "서초구": 260 };
+
+  grid.innerHTML = list.map(cx => {
     const rentKey = `서울 ${cx.gu}`;
     const mktRent = (RENT_DATA[rentKey] && RENT_DATA[rentKey]["59"])
       ? RENT_DATA[rentKey]["59"].avg
-      : (FALLBACK_RENT[cx.gu] || 150);
-    const saved = Math.round(mktRent) - cx.monthly;
-    const pct   = saved > 0 ? Math.round(saved / mktRent * 100) : 0;
-    const tCls  = cx.type === "공공임대" ? "yh-type-public" : "yh-type-private";
+      : (FALLBACK_MKT[cx.gu] || 150);
+
+    /* 청년 월세(원) → 만원 */
+    const yRentMan = cx.youthRentFee ? Math.round(cx.youthRentFee / 10000 * 10) / 10 : null;
+    const yDepMan  = cx.youthDeposit ? Math.round(cx.youthDeposit / 10000) : null;
+
+    const saved = yRentMan ? Math.round(mktRent) - Math.round(yRentMan) : null;
+    const pct   = (saved && mktRent > 0) ? Math.round(saved / mktRent * 100) : 0;
+
+    const rentDisplay = yRentMan
+      ? `월 ${yRentMan.toLocaleString()}만원`
+      : `${cx.fnRentalLow || '—'}~${cx.fnRentalHigh || '—'}`;
+    const rentSub = yRentMan
+      ? `청년 기준 · 전체 범위 ${cx.fnRentalLow || '—'}~${cx.fnRentalHigh || '—'}`
+      : `전체 월세 범위 (청년 기준 미제공)`;
+    const depDisplay = yDepMan ? `보증금 ${yDepMan.toLocaleString()}만원` : ``;
+    const vacancyBadge = cx.hasVacancy
+      ? `<span class="yh-status-open" style="display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;">공실있음</span>`
+      : `<span class="yh-status-done"  style="display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;">공실없음</span>`;
+
+    const socoUrl = `https://soco.seoul.go.kr/youth/pgm/home/yohome/view.do?homeCode=${cx.homeCode}&menuNo=400002`;
+
     return `<div class="yh-complex-card">
       <div class="yh-complex-header">
-        <span class="yh-type-badge ${tCls}">${cx.type}</span>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">${vacancyBadge}</div>
         <div class="yh-complex-name">${cx.name}</div>
       </div>
       <div class="yh-complex-body">
         <div>
-          <div class="yh-complex-rent">월 ${cx.monthly}만원대</div>
-          <div class="yh-complex-rent-sub">보증금 ${cx.deposit} 기준 · ${cx.src}</div>
+          <div class="yh-complex-rent">${rentDisplay}</div>
+          <div class="yh-complex-rent-sub">${rentSub}${depDisplay ? ' · ' + depDisplay : ''}</div>
         </div>
-        <hr class="yh-complex-divider">
+        ${saved !== null ? `<hr class="yh-complex-divider">
         <div class="yh-complex-saving">
           <span>주변 시세 대비</span>
-          <span class="yh-complex-saving-val">${saved > 0 ? '월 ' + saved.toLocaleString() + '만원 절약' : '—'}</span>
+          <span class="yh-complex-saving-val">${saved > 0 ? '월 ' + saved.toLocaleString() + '만원 절약' : '비슷한 수준'}</span>
           ${pct > 0 ? `<span class="yh-complex-saving-pct">${pct}% 절감</span>` : ""}
-        </div>
+        </div>` : ""}
         <div class="yh-complex-meta">
           <div class="yh-complex-meta-item">
             <div class="yh-complex-meta-lbl">위치</div>
             <div class="yh-complex-meta-val">${cx.gu}</div>
           </div>
           <div class="yh-complex-meta-item">
-            <div class="yh-complex-meta-lbl">공급세대</div>
-            <div class="yh-complex-meta-val">${cx.units.toLocaleString()}세대</div>
+            <div class="yh-complex-meta-lbl">전철</div>
+            <div class="yh-complex-meta-val" style="font-size:11px;">${(cx.subway||'').split(',').slice(0,2).join(', ') || '—'}</div>
           </div>
           <div class="yh-complex-meta-item">
             <div class="yh-complex-meta-lbl">주변 시세(59형)</div>
-            <div class="yh-complex-meta-val">월 ${Math.round(mktRent).toLocaleString()}만원</div>
+            <div class="yh-complex-meta-val">월 ${Math.round(mktRent)}만원</div>
           </div>
         </div>
+        <a href="${socoUrl}" target="_blank" class="yh-notice-link" style="display:block;margin-top:8px;border-radius:4px;text-decoration:none;padding:7px 0;text-align:center;font-size:12px;">단지 상세 보기 →</a>
       </div>
     </div>`;
   }).join("");
