@@ -922,6 +922,16 @@
   </div>
 </section>
 
+<!-- 섹션 3-2: 주요 단지별 월세 현황 -->
+<section class="section">
+  <div class="section-title">주요 단지별 월세 현황</div>
+  <div class="section-desc">SH공사 공공임대 주요 단지 실제 월세 · 주변 시세 59형 기준 비교</div>
+  <div class="yh-complex-grid" id="yhComplexGrid"></div>
+  <div style="font-size:11px;color:#aaa;margin-top:10px;line-height:1.6;">
+    ※ 월세는 특정 층·타입 기준 공개 정보이며 단지별·세대별 차이 있음. 주변 시세는 59㎡ 전월세 실거래 추산.
+  </div>
+</section>
+
 <!-- 섹션 4: 주변 시세 비교 -->
 <section class="section">
   <div class="section-title">청년안심주택 vs 주변 시세 비교</div>
@@ -1229,6 +1239,26 @@
   .yh-res-total .yh-res-val    { color:#00875a; }
   .yh-res-sub { font-size:11px; color:#888; }
   .yh-saving-box { border:1px solid #b89eff; border-radius:8px; padding:20px 22px; background:#faf8ff; }
+
+  /* ── SH 단지별 월세 ── */
+  .yh-complex-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  @media(max-width:900px){ .yh-complex-grid { grid-template-columns:repeat(2,1fr); } }
+  @media(max-width:600px){ .yh-complex-grid { grid-template-columns:1fr; } }
+  .yh-complex-card { border:1px solid #d8d8d8; border-radius:8px; overflow:hidden; transition:box-shadow .15s,transform .15s; }
+  .yh-complex-card:hover { box-shadow:0 8px 24px rgba(0,0,0,.08); transform:translateY(-2px); }
+  .yh-complex-header { padding:14px 16px 10px; background:#f8f8f8; border-bottom:1px solid #e8e8e8; }
+  .yh-complex-name { font-size:15px; font-weight:800; letter-spacing:-.3px; margin-top:4px; }
+  .yh-complex-body { padding:14px 16px; display:flex; flex-direction:column; gap:8px; }
+  .yh-complex-rent { font-size:28px; font-weight:900; color:#00875a; letter-spacing:-1px; }
+  .yh-complex-rent-sub { font-size:11px; color:#888; margin-top:-4px; }
+  .yh-complex-divider { border:none; border-top:1px solid #f0f0f0; margin:2px 0; }
+  .yh-complex-saving { display:flex; align-items:center; gap:8px; font-size:12px; color:#555; flex-wrap:wrap; }
+  .yh-complex-saving-val { font-size:14px; font-weight:800; color:#00875a; }
+  .yh-complex-saving-pct { font-size:11px; background:#e6fff6; color:#00875a; padding:2px 7px; border-radius:4px; font-weight:700; }
+  .yh-complex-meta { display:flex; gap:14px; flex-wrap:wrap; margin-top:4px; }
+  .yh-complex-meta-item { display:flex; flex-direction:column; gap:1px; }
+  .yh-complex-meta-lbl { font-size:10px; font-weight:700; color:#aaa; text-transform:uppercase; letter-spacing:.04em; }
+  .yh-complex-meta-val { font-size:12px; font-weight:700; color:#444; }
 </style>
 
 <div class="disclaimer">
@@ -1798,6 +1828,11 @@ async function loadData() {
     }
     if (data.youth_housing && data.youth_housing.length > 0) {
       YOUTH_NOTICES = data.youth_housing;
+    }
+    if (data.yh_complexes && data.yh_complexes.length > 0) {
+      YH_COMPLEXES = data.yh_complexes;
+    }
+    if (data.youth_housing || data.yh_complexes) {
       renderYouthHousing();
     }
     if (data.summary && Object.keys(data.summary).length > 0) {
@@ -2788,6 +2823,13 @@ const YOUTH_NOTICES_STATIC = [
 ];
 let YOUTH_NOTICES = [...YOUTH_NOTICES_STATIC];
 
+const YH_COMPLEXES_STATIC = [
+  { name:"용산 베르디움 프렌즈", gu:"용산구",   type:"공공임대",       monthly:9,  units:450, src:"SH공사 공공임대", deposit:"5,000만원" },
+  { name:"한화 포레나 당산",     gu:"영등포구",  type:"공공임대",       monthly:12, units:520, src:"SH공사 공공임대", deposit:"6,000만원" },
+  { name:"잠실 엘타워",         gu:"송파구",    type:"공공지원민간임대", monthly:23, units:586, src:"SH공사 민간임대", deposit:"1억" },
+];
+let YH_COMPLEXES = [...YH_COMPLEXES_STATIC];
+
 const YOUTH_RENT_TABLE = [
   { size:"16~26㎡", type:"공공임대",     tag:"public",  ratio:"시세 30%",    deposit:"3,000~7,000만원",   monthly:"10~25만원",  avg:17 },
   { size:"16~26㎡", type:"공공지원민간", tag:"private", ratio:"시세 70~85%", deposit:"4,000~9,000만원",   monthly:"25~55만원",  avg:40 },
@@ -2955,6 +2997,54 @@ function calcYH() {
   document.getElementById("yhSaveNote").textContent = total > 0 ? `연간 약 ${(saved*12).toLocaleString()}만원 절약 · 1억 보증금 대출 이자 포함 기준` : "";
 }
 
+/* ── 단지별 월세 카드 렌더 ── */
+function renderYHComplexes() {
+  const FALLBACK_RENT = { "용산구": 200, "영등포구": 100, "송파구": 170 };
+  const grid = document.getElementById("yhComplexGrid");
+  if (!grid) return;
+  grid.innerHTML = YH_COMPLEXES.map(cx => {
+    const rentKey = `서울 ${cx.gu}`;
+    const mktRent = (RENT_DATA[rentKey] && RENT_DATA[rentKey]["59"])
+      ? RENT_DATA[rentKey]["59"].avg
+      : (FALLBACK_RENT[cx.gu] || 150);
+    const saved = Math.round(mktRent) - cx.monthly;
+    const pct   = saved > 0 ? Math.round(saved / mktRent * 100) : 0;
+    const tCls  = cx.type === "공공임대" ? "yh-type-public" : "yh-type-private";
+    return `<div class="yh-complex-card">
+      <div class="yh-complex-header">
+        <span class="yh-type-badge ${tCls}">${cx.type}</span>
+        <div class="yh-complex-name">${cx.name}</div>
+      </div>
+      <div class="yh-complex-body">
+        <div>
+          <div class="yh-complex-rent">월 ${cx.monthly}만원대</div>
+          <div class="yh-complex-rent-sub">보증금 ${cx.deposit} 기준 · ${cx.src}</div>
+        </div>
+        <hr class="yh-complex-divider">
+        <div class="yh-complex-saving">
+          <span>주변 시세 대비</span>
+          <span class="yh-complex-saving-val">${saved > 0 ? '월 ' + saved.toLocaleString() + '만원 절약' : '—'}</span>
+          ${pct > 0 ? `<span class="yh-complex-saving-pct">${pct}% 절감</span>` : ""}
+        </div>
+        <div class="yh-complex-meta">
+          <div class="yh-complex-meta-item">
+            <div class="yh-complex-meta-lbl">위치</div>
+            <div class="yh-complex-meta-val">${cx.gu}</div>
+          </div>
+          <div class="yh-complex-meta-item">
+            <div class="yh-complex-meta-lbl">공급세대</div>
+            <div class="yh-complex-meta-val">${cx.units.toLocaleString()}세대</div>
+          </div>
+          <div class="yh-complex-meta-item">
+            <div class="yh-complex-meta-lbl">주변 시세(59형)</div>
+            <div class="yh-complex-meta-val">월 ${Math.round(mktRent).toLocaleString()}만원</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
 /* ── 청년안심주택 전체 렌더 ── */
 function renderYouthHousing() {
   const total    = YOUTH_NOTICES.length;
@@ -2964,6 +3054,7 @@ function renderYouthHousing() {
   renderYHNotices("all");
   renderYHRentTable();
   renderYHConditions();
+  renderYHComplexes();
   renderYHSiseChart();
   calcYH();
 }
